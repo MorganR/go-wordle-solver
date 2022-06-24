@@ -6,23 +6,23 @@ import (
 	"gotest.tools/v3/assert"
 )
 
-func TestNewWordBankWithNilList(t *testing.T) {
-	_, err := NewWordBank(nil)
+func TestInitWordBankWithNilList(t *testing.T) {
+	_, err := InitWordBank(nil)
 	assert.Error(t, err, "At least one word must be provided.")
 }
 
-func TestNewWordBankWithEmptyList(t *testing.T) {
-	_, err := NewWordBank([]string{})
+func TestInitWordBankWithEmptyList(t *testing.T) {
+	_, err := InitWordBank([]string{})
 	assert.Error(t, err, "At least one word must be provided.")
 }
 
-func TestNewWordBankWithDifferentLengthWords(t *testing.T) {
-	_, err := NewWordBank([]string{"bad", "rad", "good"})
+func TestInitWordBankWithDifferentLengthWords(t *testing.T) {
+	_, err := InitWordBank([]string{"bad", "rad", "good"})
 	assert.Error(t, err, "Words must all be the same length.")
 }
 
 func TestWordBankWords(t *testing.T) {
-	bank, _ := NewWordBank([]string{"foo", "bar"})
+	bank, _ := InitWordBank([]string{"foo", "bar"})
 	pw := bank.Words()
 
 	assert.Equal(t, pw.Len(), 2)

@@ -14,7 +14,7 @@ type WordBank struct {
 //
 // The list must be non-empty, and the words must all have the same length. Duplicate words are
 // removed.
-func NewWordBank(words []string) (WordBank, error) {
+func InitWordBank(words []string) (WordBank, error) {
 	if len(words) == 0 {
 		return WordBank{}, errors.New("At least one word must be provided.")
 	}

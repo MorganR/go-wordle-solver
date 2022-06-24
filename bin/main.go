@@ -2,7 +2,8 @@ package main
 
 import (
 	"fmt"
-	"github.com/MorganR/go-wordle-solver/lib"
+
+	go_wordle_solver "github.com/MorganR/go-wordle-solver/lib"
 )
 
 // fibonacci is a function that returns
@@ -22,7 +23,7 @@ func main() {
 		fmt.Println(f())
 	}
 
-	wb, _ := go_wordle_solver.NewWordBank([]string { "foo", "bar"})
+	wb, _ := go_wordle_solver.InitWordBank([]string{"foo", "bar"})
 	pw := wb.Words()
 	fmt.Printf("There are %v possible words.\n", pw.Len())
 }
