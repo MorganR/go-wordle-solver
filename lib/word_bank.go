@@ -6,28 +6,28 @@ import (
 
 // WordBank provides a read-only set of equal length words.
 type WordBank struct {
-	allWords []string
+	allWords   []string
 	wordLength uint
 }
 
-// Creates a WordBank from the given word list. 
+// Creates a WordBank from the given word list.
 //
 // The list must be non-empty, and the words must all have the same length. Duplicate words are
 // removed.
 func NewWordBank(words []string) (WordBank, error) {
 	if len(words) == 0 {
-		return WordBank {}, errors.New("At least one word must be provided.")
+		return WordBank{}, errors.New("At least one word must be provided.")
 	}
 	wordLength := len(words[0])
 	for _, word := range words {
 		if len(word) != wordLength {
-			return WordBank {}, errors.New("Words must all be the same length.")
+			return WordBank{}, errors.New("Words must all be the same length.")
 		}
 	}
-	return WordBank { words, uint(wordLength) }, nil
+	return WordBank{words, uint(wordLength)}, nil
 }
 
 // Returns all possible words from this word bank.
 func (wb *WordBank) Words() PossibleWords {
-	return PossibleWords { wb.allWords }
+	return PossibleWords{wb.allWords}
 }
