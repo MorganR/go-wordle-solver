@@ -1,6 +1,9 @@
 package main
 
-import "fmt"
+import (
+	"fmt"
+	"github.com/MorganR/go-wordle-solver/lib"
+)
 
 // fibonacci is a function that returns
 // a function that returns an int.
@@ -18,4 +21,8 @@ func main() {
 	for i := 0; i < 10; i++ {
 		fmt.Println(f())
 	}
+
+	wb, _ := go_wordle_solver.NewWordBank([]string { "foo", "bar"})
+	pw := wb.Words()
+	fmt.Printf("There are %v possible words.\n", pw.Len())
 }
