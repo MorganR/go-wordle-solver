@@ -295,14 +295,14 @@ func InitWordRestrictions(wordLength uint8) WordRestrictions {
 /// Returns the restrictions imposed by the given result.
 func WordRestrictionsFromResult(result *GuessResult) (WordRestrictions, error) {
 	restrictions := InitWordRestrictions(uint8(len(result.Guess)))
-	err := restrictions.update(result)
+	err := restrictions.Update(result)
 	return restrictions, err
 }
 
 /// Adds restrictions arising from the given result.
 ///
 /// Returns an error if the result is incompatible with the existing restrictions.
-func (self *WordRestrictions) update(guessResult *GuessResult) error {
+func (self *WordRestrictions) Update(guessResult *GuessResult) error {
 	var err error
 	for i, letter := range guessResult.Guess {
 		switch guessResult.Results[i] {
@@ -323,7 +323,7 @@ func (self *WordRestrictions) update(guessResult *GuessResult) error {
 /// Adds the given restrictions to this restriction.
 ///
 /// Returns an error if the results are incompatible.
-func (self *WordRestrictions) merge(other *WordRestrictions) error {
+func (self *WordRestrictions) Merge(other *WordRestrictions) error {
 	if self.wordLength != other.wordLength {
 		return errors.New(fmt.Sprintf("Can't merge restrictions with different word lengths (has: %v, received: %v).", self.wordLength, other.wordLength))
 	}
