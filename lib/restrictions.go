@@ -376,7 +376,7 @@ func (self *WordRestrictions) IsSatisfiedBy(word string) bool {
 }
 
 /// Returns true iff the exact state of the given letter at the given location is already known.
-func (self *WordRestrictions) IsStateKnown(ll LocatedLetter) bool {
+func (self *WordRestrictions) IsStateKnown(ll *LocatedLetter) bool {
 	if presence, isPresent := self.presentLetters[ll.Letter]; isPresent {
 		return presence.state(ll.Location) != llsUnknown
 	}
@@ -390,7 +390,7 @@ func (self *WordRestrictions) IsStateKnown(ll LocatedLetter) bool {
 ///  * `LetterRestrictionPresentNotHere` -> The letter is present but not here.
 ///  * `LetterRestrictionPresentMaybeHere` -> The letter is present, but we don't know if it's here or not.
 ///  * `LetterRestrictionHere` -> The letter goes here.
-func (self *WordRestrictions) State(ll LocatedLetter) LetterRestriction {
+func (self *WordRestrictions) State(ll *LocatedLetter) LetterRestriction {
 	if presence, isPresent := self.presentLetters[ll.Letter]; isPresent {
 		switch presence.state(ll.Location) {
 		case llsHere:

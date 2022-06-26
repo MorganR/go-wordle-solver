@@ -204,15 +204,15 @@ func TestWordRestrictionsState(t *testing.T) {
 		},
 	}))
 
-	assert.Equal(t, restrictions.State(LocatedLetter{Letter: 'a', Location: 0}), LetterRestrictionPresentNotHere)
-	assert.Equal(t, restrictions.State(LocatedLetter{Letter: 'a', Location: 1}), LetterRestrictionPresentMaybeHere)
-	assert.Equal(t, restrictions.State(LocatedLetter{Letter: 'a', Location: 2}), LetterRestrictionPresentNotHere)
-	assert.Equal(t, restrictions.State(LocatedLetter{Letter: 'b', Location: 0}), LetterRestrictionPresentMaybeHere)
-	assert.Equal(t, restrictions.State(LocatedLetter{Letter: 'b', Location: 1}), LetterRestrictionPresentNotHere)
-	assert.Equal(t, restrictions.State(LocatedLetter{Letter: 'b', Location: 2}), LetterRestrictionHere)
-	assert.Equal(t, restrictions.State(LocatedLetter{Letter: 'c', Location: 3}), LetterRestrictionNotPresent)
-	assert.Equal(t, restrictions.State(LocatedLetter{Letter: 'c', Location: 0}), LetterRestrictionNotPresent)
-	assert.Equal(t, restrictions.State(LocatedLetter{Letter: 'z', Location: 0}), LetterRestrictionUnknown)
+	assert.Equal(t, restrictions.State(&LocatedLetter{Letter: 'a', Location: 0}), LetterRestrictionPresentNotHere)
+	assert.Equal(t, restrictions.State(&LocatedLetter{Letter: 'a', Location: 1}), LetterRestrictionPresentMaybeHere)
+	assert.Equal(t, restrictions.State(&LocatedLetter{Letter: 'a', Location: 2}), LetterRestrictionPresentNotHere)
+	assert.Equal(t, restrictions.State(&LocatedLetter{Letter: 'b', Location: 0}), LetterRestrictionPresentMaybeHere)
+	assert.Equal(t, restrictions.State(&LocatedLetter{Letter: 'b', Location: 1}), LetterRestrictionPresentNotHere)
+	assert.Equal(t, restrictions.State(&LocatedLetter{Letter: 'b', Location: 2}), LetterRestrictionHere)
+	assert.Equal(t, restrictions.State(&LocatedLetter{Letter: 'c', Location: 3}), LetterRestrictionNotPresent)
+	assert.Equal(t, restrictions.State(&LocatedLetter{Letter: 'c', Location: 0}), LetterRestrictionNotPresent)
+	assert.Equal(t, restrictions.State(&LocatedLetter{Letter: 'z', Location: 0}), LetterRestrictionUnknown)
 }
 
 func TestWordRestrictionsIsStateKnown(t *testing.T) {
@@ -228,12 +228,12 @@ func TestWordRestrictionsIsStateKnown(t *testing.T) {
 		},
 	}))
 
-	assert.Assert(t, restrictions.IsStateKnown(LocatedLetter{Letter: 'a', Location: 0}))
-	assert.Equal(t, restrictions.IsStateKnown(LocatedLetter{Letter: 'a', Location: 1}), false)
-	assert.Assert(t, restrictions.IsStateKnown(LocatedLetter{Letter: 'b', Location: 2}))
-	assert.Assert(t, restrictions.IsStateKnown(LocatedLetter{Letter: 'c', Location: 3}))
-	assert.Assert(t, restrictions.IsStateKnown(LocatedLetter{Letter: 'c', Location: 0}))
-	assert.Equal(t, restrictions.IsStateKnown(LocatedLetter{Letter: 'z', Location: 0}), false)
+	assert.Assert(t, restrictions.IsStateKnown(&LocatedLetter{Letter: 'a', Location: 0}))
+	assert.Equal(t, restrictions.IsStateKnown(&LocatedLetter{Letter: 'a', Location: 1}), false)
+	assert.Assert(t, restrictions.IsStateKnown(&LocatedLetter{Letter: 'b', Location: 2}))
+	assert.Assert(t, restrictions.IsStateKnown(&LocatedLetter{Letter: 'c', Location: 3}))
+	assert.Assert(t, restrictions.IsStateKnown(&LocatedLetter{Letter: 'c', Location: 0}))
+	assert.Equal(t, restrictions.IsStateKnown(&LocatedLetter{Letter: 'z', Location: 0}), false)
 }
 
 func TestWordRestrictionsIsSatisfiedByWithKnownRequiredCount(t *testing.T) {
