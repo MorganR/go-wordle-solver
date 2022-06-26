@@ -5,7 +5,7 @@ import (
 )
 
 func TestPossibleWordsLen(t *testing.T) {
-	pw := &PossibleWords{[]string{"foo", "bar"}}
+	pw := &PossibleWords{[][]rune{[]rune("foo"), []rune("bar")}}
 	want := 2
 	got := pw.Len()
 	if got != want {

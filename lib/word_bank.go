@@ -6,7 +6,7 @@ import (
 
 // WordBank provides a read-only set of equal length words.
 type WordBank struct {
-	allWords   []string
+	allWords   [][]rune
 	wordLength uint
 }
 
@@ -19,12 +19,15 @@ func InitWordBank(words []string) (WordBank, error) {
 		return WordBank{}, errors.New("At least one word must be provided.")
 	}
 	wordLength := len(words[0])
-	for _, word := range words {
-		if len(word) != wordLength {
+	allWords := make([][]rune, len(words))
+	for i, word := range words {
+		wordRunes := []rune(word)
+		if len(wordRunes) != wordLength {
 			return WordBank{}, errors.New("Words must all be the same length.")
 		}
+		allWords[i] = wordRunes
 	}
-	return WordBank{words, uint(wordLength)}, nil
+	return WordBank{allWords, uint(wordLength)}, nil
 }
 
 // Returns all possible words from this word bank.

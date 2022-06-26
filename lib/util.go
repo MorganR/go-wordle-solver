@@ -1,5 +1,11 @@
 package go_wordle_solver
 
+func fillSlice[T any](s []T, v T) {
+	for i := range s {
+		s[i] = v
+	}
+}
+
 func allValues[T any](s []T, fn func(T) bool) bool {
 	for _, v := range s {
 		if !fn(v) {
