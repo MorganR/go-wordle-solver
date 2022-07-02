@@ -7,13 +7,13 @@ import (
 )
 
 func TestGetResultForGuessCorrect(t *testing.T) {
-	result, err := GetResultForGuess([]rune("abcb"), []rune("abcb"))
+	result, err := GetResultForGuess(WordFromString("abcb"), WordFromString("abcb"))
 
 	assert.NilError(t, err)
 	assert.DeepEqual(t,
 		result,
 		GuessResult{
-			Guess: []rune("abcb"),
+			Guess: WordFromString("abcb"),
 			Results: []LetterResult{
 				LetterResultCorrect,
 				LetterResultCorrect,
@@ -25,13 +25,13 @@ func TestGetResultForGuessCorrect(t *testing.T) {
 }
 
 func TestGetResultForGuessSupportsUnicode(t *testing.T) {
-	result, err := GetResultForGuess([]rune("abc"), []rune("ab£"))
+	result, err := GetResultForGuess(WordFromString("abc"), WordFromString("ab£"))
 
 	assert.NilError(t, err)
 	assert.DeepEqual(t,
 		result,
 		GuessResult{
-			Guess: []rune("ab£"),
+			Guess: WordFromString("ab£"),
 			Results: []LetterResult{
 				LetterResultCorrect,
 				LetterResultCorrect,
@@ -42,13 +42,13 @@ func TestGetResultForGuessSupportsUnicode(t *testing.T) {
 }
 
 func TestGetResultForGuessPartial(t *testing.T) {
-	result, err := GetResultForGuess([]rune("mesas"), []rune("sassy"))
+	result, err := GetResultForGuess(WordFromString("mesas"), WordFromString("sassy"))
 
 	assert.NilError(t, err)
 	assert.DeepEqual(t,
 		result,
 		GuessResult{
-			Guess: []rune("sassy"),
+			Guess: WordFromString("sassy"),
 			Results: []LetterResult{
 				LetterResultPresentNotHere,
 				LetterResultPresentNotHere,
@@ -58,12 +58,12 @@ func TestGetResultForGuessPartial(t *testing.T) {
 			},
 		})
 
-	result, err = GetResultForGuess([]rune("abba"), []rune("babb"))
+	result, err = GetResultForGuess(WordFromString("abba"), WordFromString("babb"))
 	assert.NilError(t, err)
 	assert.DeepEqual(t,
 		result,
 		GuessResult{
-			Guess: []rune("babb"),
+			Guess: WordFromString("babb"),
 			Results: []LetterResult{
 				LetterResultPresentNotHere,
 				LetterResultPresentNotHere,
@@ -72,12 +72,12 @@ func TestGetResultForGuessPartial(t *testing.T) {
 			},
 		})
 
-	result, err = GetResultForGuess([]rune("abcb"), []rune("bcce"))
+	result, err = GetResultForGuess(WordFromString("abcb"), WordFromString("bcce"))
 	assert.NilError(t, err)
 	assert.DeepEqual(t,
 		result,
 		GuessResult{
-			Guess: []rune("bcce"),
+			Guess: WordFromString("bcce"),
 			Results: []LetterResult{
 				LetterResultPresentNotHere,
 				LetterResultNotPresent,
@@ -89,12 +89,12 @@ func TestGetResultForGuessPartial(t *testing.T) {
 }
 
 func TestGetResultForGuessNoneMatch(t *testing.T) {
-	result, err := GetResultForGuess([]rune("abcb"), []rune("defg"))
+	result, err := GetResultForGuess(WordFromString("abcb"), WordFromString("defg"))
 	assert.NilError(t, err)
 	assert.DeepEqual(t,
 		result,
 		GuessResult{
-			Guess: []rune("defg"),
+			Guess: WordFromString("defg"),
 			Results: []LetterResult{
 				LetterResultNotPresent,
 				LetterResultNotPresent,
@@ -105,29 +105,29 @@ func TestGetResultForGuessNoneMatch(t *testing.T) {
 }
 
 func TestGetResultForGuessInvalidGuess(t *testing.T) {
-	_, err := GetResultForGuess([]rune("goal"), []rune("guess"))
+	_, err := GetResultForGuess(WordFromString("goal"), WordFromString("guess"))
 
 	assert.Error(t, err, "The guess (guess) must be the same length as the objective (length: 4).")
 }
 
 func BenchmarkGetResultForGuessCorrect(b *testing.B) {
-	objective := []rune("abcbd")
+	objective := WordFromString("abcbd")
 	for n := 0; n < b.N; n++ {
 		GetResultForGuess(objective, objective)
 	}
 }
 
 func BenchmarkGetResultForGuessPartial(b *testing.B) {
-	objective := []rune("mesas")
-	guess := []rune("sassy")
+	objective := WordFromString("mesas")
+	guess := WordFromString("sassy")
 	for n := 0; n < b.N; n++ {
 		GetResultForGuess(objective, guess)
 	}
 }
 
 func BenchmarkGetResultForGuessNoMatch(b *testing.B) {
-	objective := []rune("abcdefg")
-	guess := []rune("hijklmn")
+	objective := WordFromString("abcdefg")
+	guess := WordFromString("hijklmn")
 	for n := 0; n < b.N; n++ {
 		GetResultForGuess(objective, guess)
 	}

@@ -9,7 +9,7 @@ import (
 
 func TestLen(t *testing.T) {
 	w := WordFromString("hello")
-	assert.Equal(t, w.Len(), uint8(5))
+	assert.Equal(t, w.Len(), 5)
 }
 
 func TestAt(t *testing.T) {
@@ -33,16 +33,17 @@ func TestString(t *testing.T) {
 	assert.Equal(t, w.String(), "hello")
 }
 
-func TestFullForEach(t *testing.T) {
+func TestIterator(t *testing.T) {
 	w := WordFromString("hello")
 
 	wordLength := w.Len()
 	letters := make([]rune, wordLength)
 
-	w.ForEach(func(i int, l rune) bool {
+	wi := w.AsIterator()
+	for ok := wi.Next(); ok; ok = wi.Next() {
+		i, l := wi.Get()
 		letters[i] = l
-		return true
-	})
+	}
 
 	want := []rune{'h', 'e', 'l', 'l', 'o'}
 	if slices.Compare(letters, want) != 0 {
@@ -50,18 +51,19 @@ func TestFullForEach(t *testing.T) {
 	}
 }
 
-func TestForEachWithBreak(t *testing.T) {
+func TestIteratorFrom(t *testing.T) {
 	w := WordFromString("hello")
 
 	wordLength := w.Len()
 	letters := make([]rune, wordLength)
 
-	w.ForEach(func(i int, l rune) bool {
+	wi := w.AsIteratorFrom(2)
+	for ok := wi.Next(); ok; ok = wi.Next() {
+		i, l := wi.Get()
 		letters[i] = l
-		return i != 2
-	})
+	}
 
-	want := []rune{'h', 'e', 'l', 0, 0}
+	want := []rune{'l', 'l', 'o', 0, 0}
 	if slices.Compare(letters, want) != 0 {
 		t.Errorf("Expected letters to have value %v but found %v", want, letters)
 	}

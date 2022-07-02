@@ -32,7 +32,7 @@ const (
 /// be: `[PresentNotHere, PresentNotHere, Correct, NotPresent, NotPresent]`.
 type GuessResult struct {
 	/// The guess that was made.
-	Guess []rune
+	Guess Word
 	/// The result of each letter, provided in the same letter order as in the guess.
 	Results []LetterResult
 }
@@ -63,11 +63,11 @@ type GuessResult struct {
 ///     ]
 /// );
 /// ```
-func GetResultForGuess(objective, guess []rune) (GuessResult, error) {
+func GetResultForGuess(objective, guess Word) (GuessResult, error) {
 	// Convert to runes to properly handle unicode.
-	guessLen := len(guess)
-	if len(objective) != guessLen {
-		return GuessResult{}, fmt.Errorf("The guess (%s) must be the same length as the objective (length: %v).", string(guess), len(objective))
+	guessLen := guess.Len()
+	if objective.Len() != guessLen {
+		return GuessResult{}, fmt.Errorf("The guess (%s) must be the same length as the objective (length: %v).", guess, objective.Len())
 	}
 	// This algorithm does the following:
 	// * Assume none of the letters in the guess are present in the objective.
@@ -83,9 +83,11 @@ func GetResultForGuess(objective, guess []rune) (GuessResult, error) {
 	//   * Otherwise, check the objective letter's index. If that's correct, then revert the previous matching letter (if any) to `NotPresent`, and instead mark this letter as `Correct`. If this guess index was already accounting for a previous objective letter (i.e. marked `PresentNotHere`), then forward that to the next instance of this letter in the guess (if any).
 	results := make([]LetterResult, guessLen)
 	fillSlice(results, LetterResultNotPresent)
-	for oi, objectiveLetter := range objective {
+	objectiveIterator := objective.AsIterator()
+	for ok := objectiveIterator.Next(); ok; ok = objectiveIterator.Next() {
+		oi, objectiveLetter := objectiveIterator.Get()
 		startI := 0
-		if objective[oi] == guess[oi] {
+		if objective.At(oi) == guess.At(oi) {
 			existingResult := results[oi]
 			results[oi] = LetterResultCorrect
 			if existingResult != LetterResultPresentNotHere || oi == guessLen-1 {
@@ -93,7 +95,9 @@ func GetResultForGuess(objective, guess []rune) (GuessResult, error) {
 			}
 			startI = oi + 1
 		}
-		for gi, guessLetter := range guess[startI:] {
+		guessIterator := guess.AsIteratorFrom(startI)
+		for gok := guessIterator.Next(); gok; gok = guessIterator.Next() {
+			gi, guessLetter := guessIterator.Get()
 			// Continue if this letter doesn't match.
 			if guessLetter != objectiveLetter {
 				continue
