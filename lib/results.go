@@ -83,9 +83,8 @@ func GetResultForGuess(objective, guess Word) (GuessResult, error) {
 	//   * Otherwise, check the objective letter's index. If that's correct, then revert the previous matching letter (if any) to `NotPresent`, and instead mark this letter as `Correct`. If this guess index was already accounting for a previous objective letter (i.e. marked `PresentNotHere`), then forward that to the next instance of this letter in the guess (if any).
 	results := make([]LetterResult, guessLen)
 	fillSlice(results, LetterResultNotPresent)
-	objectiveIterator := objective.AsIterator()
-	for ok := objectiveIterator.Next(); ok; ok = objectiveIterator.Next() {
-		oi, objectiveLetter := objectiveIterator.Get()
+	for oi := 0; oi < guessLen; oi++ {
+		objectiveLetter := objective.At(oi)
 		startI := 0
 		if objective.At(oi) == guess.At(oi) {
 			existingResult := results[oi]
@@ -95,9 +94,8 @@ func GetResultForGuess(objective, guess Word) (GuessResult, error) {
 			}
 			startI = oi + 1
 		}
-		guessIterator := guess.AsIteratorFrom(startI)
-		for gok := guessIterator.Next(); gok; gok = guessIterator.Next() {
-			gi, guessLetter := guessIterator.Get()
+		for gi := startI; gi < guessLen; gi++ {
+			guessLetter := guess.At(gi)
 			// Continue if this letter doesn't match.
 			if guessLetter != objectiveLetter {
 				continue

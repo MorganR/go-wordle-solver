@@ -304,9 +304,9 @@ func WordRestrictionsFromResult(result *GuessResult) (WordRestrictions, error) {
 /// Returns an error if the result is incompatible with the existing restrictions.
 func (self *WordRestrictions) Update(guessResult *GuessResult) error {
 	var err error
-	gi := guessResult.Guess.AsIterator()
-	for ok := gi.Next(); ok; ok = gi.Next() {
-		i, letter := gi.Get()
+	guessLen := guessResult.Guess.Len()
+	for i := 0; i < guessLen; i++ {
+		letter := guessResult.Guess.At(i)
 		switch guessResult.Results[i] {
 		case LetterResultCorrect:
 			err = self.setLetterHere(letter, uint8(i), guessResult)
@@ -501,9 +501,9 @@ func (self *WordRestrictions) setLetterNotPresent(
 
 func countNumTimesInGuess(letter rune, guessResult *GuessResult) uint8 {
 	var sum uint8 = 0
-	gi := guessResult.Guess.AsIterator()
-	for ok := gi.Next(); ok; ok = gi.Next() {
-		i, guessLetter := gi.Get()
+	guessLen := guessResult.Guess.Len()
+	for i := 0; i < guessLen; i++ {
+		guessLetter := guessResult.Guess.At(i)
 		if guessLetter == letter && guessResult.Results[i] != LetterResultNotPresent {
 			sum += 1
 		}
