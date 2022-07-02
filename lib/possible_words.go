@@ -1,7 +1,7 @@
 package go_wordle_solver
 
 type PossibleWords struct {
-	words [][]rune
+	words []Word
 }
 
 func (pw *PossibleWords) Len() int {

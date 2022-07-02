@@ -10,7 +10,7 @@ import (
 
 // WordBank provides a read-only set of equal length words.
 type WordBank struct {
-	allWords   [][]rune
+	allWords   []Word
 	wordLength uint
 }
 
@@ -24,12 +24,12 @@ const defaultWordBuffer int = 100
 // After trimming, all words must be the same length, else this returns an error.
 func WordBankFromReader(r io.Reader) (WordBank, error) {
 	s := bufio.NewScanner(r)
-	words := make([][]rune, 0, defaultWordBuffer)
+	words := make([]Word, 0, defaultWordBuffer)
 	n := 0
 	wordLength := 0
 	for ok := s.Scan(); ok; ok = s.Scan() {
-		thisWord := []rune(strings.ToLower(strings.TrimSpace(s.Text())))
-		thisWordLength := len(thisWord)
+		thisWord := WordFromString(strings.ToLower(strings.TrimSpace(s.Text())))
+		thisWordLength := thisWord.Len()
 		if thisWordLength == 0 {
 			continue
 		}
@@ -61,13 +61,13 @@ func WordBankFromSlice(words []string) (WordBank, error) {
 		return WordBank{}, errors.New("At least one word must be provided.")
 	}
 	wordLength := len(words[0])
-	allWords := make([][]rune, len(words))
-	for i, word := range words {
-		wordRunes := []rune(strings.ToLower(strings.TrimSpace(word)))
-		if len(wordRunes) != wordLength {
-			return WordBank{}, fmt.Errorf("Words must all be the same length. Encountered word with length %v when expecting length %v.", len(wordRunes), wordLength)
+	allWords := make([]Word, len(words))
+	for i, wordStr := range words {
+		word := WordFromString(strings.ToLower(strings.TrimSpace(wordStr)))
+		if word.Len() != wordLength {
+			return WordBank{}, fmt.Errorf("Words must all be the same length. Encountered word with length %v when expecting length %v.", word.Len(), wordLength)
 		}
-		allWords[i] = wordRunes
+		allWords[i] = word
 	}
 	return WordBank{allWords, uint(wordLength)}, nil
 }
