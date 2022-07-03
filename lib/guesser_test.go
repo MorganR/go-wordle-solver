@@ -97,3 +97,27 @@ func TestPlayGameWithKnownWordRandom(t *testing.T) {
 	assert.Assert(t, len(got.Turns) <= 4, "Random guesser took more than 4 guesses.")
 	assert.DeepEqual(t, got.Turns[len(got.Turns)-1].Guess, WordFromString("abcz"))
 }
+
+func TestPlayGameWithUnknownWordMaxScore(t *testing.T) {
+	bank, _ := WordBankFromSlice([]string{"abcz", "weyz", "defy", "ghix"})
+	scorer, err := InitMaxEliminationsScorer(&bank)
+	assert.NilError(t, err)
+	guesser := InitMaxScoreGuesser(&bank, &scorer, GuessModeAll)
+
+	_, err = PlayGameWithGuesser(WordFromString("nope"), 10, &guesser)
+	assert.Error(t, err, "No more valid guesses.")
+}
+
+func TestPlayGameWithKnownWordMaxScore(t *testing.T) {
+	bank, _ := WordBankFromSlice([]string{"abcz", "weyz", "defy", "ghix"})
+	scorer, err := InitMaxEliminationsScorer(&bank)
+	assert.NilError(t, err)
+	guesser := InitMaxScoreGuesser(&bank, &scorer, GuessModeAll)
+
+	got, err := PlayGameWithGuesser(WordFromString("abcz"), 10, &guesser)
+
+	assert.NilError(t, err)
+	assert.Equal(t, got.Status, GameSuccess)
+	assert.Assert(t, len(got.Turns) <= 4, "Max score guesser took more than 4 guesses.")
+	assert.DeepEqual(t, got.Turns[len(got.Turns)-1].Guess, WordFromString("abcz"))
+}

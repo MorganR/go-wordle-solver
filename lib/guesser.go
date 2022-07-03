@@ -177,6 +177,7 @@ func InitMaxScoreGuesser[S WordScorer](bank *WordBank, scorer S, mode GuessMode)
 func (self *MaxScoreGuesser[S]) Reset() {
 	self.possibleWords = self.bank.Words()
 	self.unguessedWords = self.bank.Words()
+	self.scorer.Reset(&self.possibleWords)
 }
 
 func (self *MaxScoreGuesser[S]) Update(result *GuessResult) error {

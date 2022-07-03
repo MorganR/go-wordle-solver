@@ -18,6 +18,29 @@ const (
 	LetterResultNotPresent
 )
 
+// A compressed form of LetterResults. Can only store vectors of up to
+// [`MaxLettersInCompressedGuessResult`] results.
+type CompressedGuessResult uint32
+
+// How many letters can be stored in CompressedGuessResult.
+const MaxLettersInCompressedGuessResult uint8 = 32 / 3
+
+/// Creates a compressed form of the given letter results.
+///
+/// Returns a [`WordleError::WordLength`] error if `letter_results` has more than 10 values.
+func CompressResults(letterResults []LetterResult) (CompressedGuessResult, error) {
+	if len(letterResults) > int(MaxLettersInCompressedGuessResult) {
+		return 0, fmt.Errorf("Results can only be compressed with up to %v letters. This result has %v.", MaxLettersInCompressedGuessResult, len(letterResults))
+	}
+	var data CompressedGuessResult = 0
+	index := 0
+	for _, result := range letterResults {
+		data |= 1 << (index + int(result))
+		index += 3
+	}
+	return data, nil
+}
+
 // The result of a single word guess.
 //
 // There is some complexity here when the guess has duplicate letters. Duplicate letters are

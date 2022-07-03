@@ -132,3 +132,39 @@ func BenchmarkGetResultForGuessNoMatch(b *testing.B) {
 		GetResultForGuess(objective, guess)
 	}
 }
+
+func TestCompressResultsEquality(t *testing.T) {
+	correct, err := CompressResults([]LetterResult{
+		LetterResultCorrect,
+		LetterResultCorrect,
+		LetterResultCorrect,
+	})
+	assert.NilError(t, err)
+	notHere, err := CompressResults([]LetterResult{
+		LetterResultPresentNotHere,
+		LetterResultPresentNotHere,
+		LetterResultPresentNotHere,
+	})
+	assert.NilError(t, err)
+	notPresent, err := CompressResults([]LetterResult{
+		LetterResultNotPresent,
+		LetterResultNotPresent,
+		LetterResultNotPresent,
+	})
+	assert.NilError(t, err)
+
+	assert.Equal(t, correct, correct)
+	assert.Equal(t, notHere, notHere)
+	assert.Equal(t, notPresent, notPresent)
+	assert.Assert(t, correct != notHere)
+	assert.Assert(t, correct != notPresent)
+	assert.Assert(t, notHere != notPresent)
+}
+
+func TestCompressResultsLimits(t *testing.T) {
+	_, err := CompressResults(make([]LetterResult, MaxLettersInCompressedGuessResult))
+	assert.NilError(t, err)
+
+	_, err = CompressResults(make([]LetterResult, MaxLettersInCompressedGuessResult+1))
+	assert.Error(t, err, "Results can only be compressed with up to 10 letters. This result has 11.")
+}
