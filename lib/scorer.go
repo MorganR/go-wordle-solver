@@ -1,6 +1,11 @@
 package go_wordle_solver
 
-import "fmt"
+import (
+	"fmt"
+	"runtime"
+)
+
+var maxThreads = runtime.NumCPU()
 
 // Gives words a score, where the maximum score indicates the best guess.
 type WordScorer interface {
@@ -47,6 +52,8 @@ type MaxEliminationsScorer struct {
 	isFirstRound                     bool
 }
 
+const maxEliminationsChunkSize int = 128
+
 // Constructs a `MaxEliminationsScorer`. **Be careful, this is expensive to compute!**
 //
 // Once constructed for a given set of words, this precomputation can be reused by simply
@@ -71,14 +78,33 @@ type MaxEliminationsScorer struct {
 func InitMaxEliminationsScorer(bank *WordBank) (MaxEliminationsScorer, error) {
 	words := bank.Words()
 	numWords := words.Len()
+	orderedExpectedEliminations := make([]float64, numWords)
+
+	chunks := make(chan int)
+	errs := make(chan error)
+	done := make(chan bool)
+
+	for i := 0; i < maxThreads; i++ {
+		go computeExpectedEliminationsChunk(chunks, errs, done, &words, orderedExpectedEliminations)
+	}
+	for start := 0; start < numWords; start += maxEliminationsChunkSize {
+		select {
+		case err := <-errs:
+			close(chunks)
+			return MaxEliminationsScorer{}, err
+		case chunks <- start:
+			continue
+		}
+	}
+	close(chunks)
+	for i := 0; i < maxThreads; i++ {
+		<-done
+	}
+
 	expectedEliminationsPerWord := make(map[string]float64, numWords)
 	for i := 0; i < numWords; i++ {
 		word := words.At(i)
-		expectedEliminations, err := computeExpectedEliminations(word, &words)
-		if err != nil {
-			return MaxEliminationsScorer{}, err
-		}
-		expectedEliminationsPerWord[word.String()] = expectedEliminations
+		expectedEliminationsPerWord[word.String()] = orderedExpectedEliminations[i]
 	}
 	return MaxEliminationsScorer{
 		possibleWords:                    &words,
@@ -110,6 +136,27 @@ func (self *MaxEliminationsScorer) ScoreWord(w Word) int64 {
 		panic(fmt.Sprintf("Failed to compute expectations for word: %s, error: %s", w, err))
 	}
 	return int64(expectedEliminations * 1000.0)
+}
+
+func computeExpectedEliminationsChunk(startIndices <-chan int, errs chan<- error, done chan<- bool, pw *PossibleWords, results []float64) {
+	pwLen := pw.Len()
+	for startIndex, ok := <-startIndices; ok; startIndex, ok = <-startIndices {
+		endIndex := startIndex + maxEliminationsChunkSize
+		if endIndex > pwLen {
+			endIndex = pwLen
+		}
+		for i := startIndex; i < endIndex; i++ {
+			word := pw.At(i)
+			expectation, err := computeExpectedEliminations(word, pw)
+			if err != nil {
+				errs <- err
+				done <- true
+				return
+			}
+			results[i] = expectation
+		}
+	}
+	done <- true
 }
 
 func computeExpectedEliminations(guess Word, possibleWords *PossibleWords) (float64, error) {
