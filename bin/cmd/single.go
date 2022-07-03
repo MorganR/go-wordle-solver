@@ -47,14 +47,10 @@ var solveCmd = &cobra.Command{
 		switch result.Status {
 		case gws.GameSuccess:
 			fmt.Printf("Solved! It took me %v guesses.\n", len(result.Data.Turns))
-			for i, td := range result.Data.Turns {
-				fmt.Printf("\t%v: %s (%v remaining)\n", i, td.Guess, td.NumPossibleWordsBeforeGuess)
-			}
+			printGuesses(result.Data)
 		case gws.GameFailure:
 			fmt.Println("Failed :( I couldn't guess the word within the guess limit.")
-			for i, td := range result.Data.Turns {
-				fmt.Printf("\t%v: %s (%v remaining)\n", i, td.Guess, td.NumPossibleWordsBeforeGuess)
-			}
+			printGuesses(result.Data)
 		case gws.UnknownWord:
 			// This should be impossible since the word is already verified to be in the word bank.
 			fmt.Println("Internal error.")
@@ -62,4 +58,10 @@ var solveCmd = &cobra.Command{
 		}
 		fmt.Printf("Guessing took %s.\n", elapsed)
 	},
+}
+
+func printGuesses(data *gws.GameData) {
+	for i, td := range data.Turns {
+		fmt.Printf("\t%v: %s (%v remaining)\n", i+1, td.Guess, td.NumPossibleWordsBeforeGuess)
+	}
 }
