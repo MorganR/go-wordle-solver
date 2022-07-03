@@ -9,6 +9,9 @@ var maxThreads = runtime.NumCPU()
 
 // Gives words a score, where the maximum score indicates the best guess.
 type WordScorer interface {
+	// Provides a copy of this scorer.
+	Copy() WordScorer
+	// Resets this scorer for a new puzzle.
 	Reset(pw *PossibleWords)
 	// Updates the scorer with the latest guess, the updated set of restrictions, and the updated
 	// list of possible words.
@@ -87,18 +90,26 @@ func InitMaxEliminationsScorer(bank *WordBank) (MaxEliminationsScorer, error) {
 	for i := 0; i < maxThreads; i++ {
 		go computeExpectedEliminationsChunk(chunks, errs, done, &words, orderedExpectedEliminations)
 	}
+	var err error = nil
 	for start := 0; start < numWords; start += maxEliminationsChunkSize {
 		select {
-		case err := <-errs:
-			close(chunks)
-			return MaxEliminationsScorer{}, err
+		case err = <-errs:
+			break
 		case chunks <- start:
 			continue
 		}
 	}
 	close(chunks)
-	for i := 0; i < maxThreads; i++ {
-		<-done
+	for dones := 0; dones < maxThreads; {
+		select {
+		case err = <-errs:
+			// Continue to clear out dones
+		case <-done:
+			dones++
+		}
+	}
+	if err != nil {
+		return MaxEliminationsScorer{}, err
 	}
 
 	expectedEliminationsPerWord := make(map[string]float64, numWords)
@@ -111,6 +122,15 @@ func InitMaxEliminationsScorer(bank *WordBank) (MaxEliminationsScorer, error) {
 		firstExpectedEliminationsPerWord: expectedEliminationsPerWord,
 		isFirstRound:                     true,
 	}, nil
+}
+
+func (self *MaxEliminationsScorer) Copy() WordScorer {
+	pwCopy := self.possibleWords.Copy()
+	return &MaxEliminationsScorer{
+		&pwCopy,
+		self.firstExpectedEliminationsPerWord,
+		self.isFirstRound,
+	}
 }
 
 func (self *MaxEliminationsScorer) Reset(pw *PossibleWords) {

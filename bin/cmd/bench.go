@@ -3,6 +3,7 @@ package cmd
 import (
 	"fmt"
 	"os"
+	"runtime"
 	"time"
 
 	gws "github.com/MorganR/go-wordle-solver/lib"
@@ -14,6 +15,8 @@ const (
 )
 
 var BenchListPath string
+
+var maxThreads = runtime.NumCPU()
 
 func init() {
 	rootCmd.AddCommand(benchCmd)
@@ -38,21 +41,39 @@ var benchCmd = &cobra.Command{
 		start := time.Now()
 		benchLen := benchWords.Len()
 		countNumGuesses := make([]int, maxGuesses)
+		results := make(chan gws.GameResult, maxThreads)
+		objectives := make(chan gws.Word, maxThreads)
+		errs := make(chan error, maxThreads)
+		done := make(chan bool)
+		benchThreads := maxThreads - 1
+		for i := 0; i < benchThreads; i++ {
+			go benchGuesser(objectives, results, errs, done, guesser.Copy())
+		}
+		go collectResults(results, done, countNumGuesses)
 		for i := 0; i < benchLen; i++ {
 			objective := benchWords.At(i)
-			result, err := gws.PlayGameWithGuesser(objective, maxGuesses, guesser)
-			if err != nil {
-				fmt.Fprintf(os.Stderr, "Error while guessing %s during benchmark.\n", objective)
-				return err
+			select {
+			case err = <-errs:
+				break
+			case objectives <- objective:
+				continue
 			}
-			if result.Status != gws.GameSuccess {
-				fmt.Fprintf(os.Stderr, "Failed to guess %s during benchmark.\n", objective)
-				printGuesses(result.Turns)
-				os.Exit(1)
-				return nil
+		}
+		close(objectives)
+		// Wait for bench threads.
+		for dones := 0; dones < benchThreads; {
+			select {
+			case err = <-errs:
+				// Continue to finish the other routines.
+			case <-done:
+				dones++
 			}
-			numGuesses := len(result.Turns)
-			countNumGuesses[numGuesses-1] = countNumGuesses[numGuesses-1] + 1
+		}
+		close(results)
+		// Wait for the collector.
+		<-done
+		if err != nil {
+			return err
 		}
 		end := time.Now()
 		elapsed := end.Sub(start)
@@ -64,6 +85,33 @@ var benchCmd = &cobra.Command{
 
 		return nil
 	},
+}
+
+func benchGuesser(objectives <-chan gws.Word, results chan<- gws.GameResult, errs chan<- error, done chan<- bool, guesser gws.Guesser) {
+	for objective, more := <-objectives; more; objective, more = <-objectives {
+		result, err := gws.PlayGameWithGuesser(objective, maxGuesses, guesser)
+		if err != nil {
+			errs <- err
+			done <- true
+			return
+		}
+		if result.Status != gws.GameSuccess {
+			errs <- fmt.Errorf("Failed to guess %s during benchmark.\n", objective)
+			printGuesses(result.Turns)
+			done <- true
+			return
+		}
+		results <- result
+	}
+	done <- true
+}
+
+func collectResults(results <-chan gws.GameResult, done chan<- bool, countNumGuesses []int) {
+	for result, more := <-results; more; result, more = <-results {
+		numGuesses := len(result.Turns)
+		countNumGuesses[numGuesses-1] = countNumGuesses[numGuesses-1] + 1
+	}
+	done <- true
 }
 
 func findLastNonZeroIndex(counts []int) int {

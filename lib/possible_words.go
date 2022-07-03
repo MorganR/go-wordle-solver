@@ -14,6 +14,14 @@ func initPossibleWords(words []Word) PossibleWords {
 	}
 }
 
+// Copies this set of possible words.
+func (pw *PossibleWords) Copy() PossibleWords {
+	return PossibleWords{
+		slices.Clone(pw.words),
+		pw.restrictions,
+	}
+}
+
 // Returns the number of possible words.
 func (pw *PossibleWords) Len() int {
 	if pw == nil {

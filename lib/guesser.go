@@ -9,6 +9,9 @@ import (
 
 // Guesses words in order to solve a single Wordle.
 type Guesser interface {
+	// Copies this guesser.
+	Copy() Guesser
+
 	// Resets this guesser for solving a new puzzle.
 	Reset()
 
@@ -126,6 +129,14 @@ func InitRandomGuesser(bank *WordBank) RandomGuesser {
 	}
 }
 
+func (self *RandomGuesser) Copy() Guesser {
+	return &RandomGuesser{
+		self.bank,
+		self.bank.Words(),
+		self.rng,
+	}
+}
+
 func (self *RandomGuesser) Reset() {
 	self.possibleWords = self.bank.Words()
 }
@@ -171,6 +182,16 @@ func InitMaxScoreGuesser[S WordScorer](bank *WordBank, scorer S, mode GuessMode)
 		scorer:         scorer,
 		guessMode:      mode,
 		unguessedWords: bank.Words(),
+	}
+}
+
+func (self *MaxScoreGuesser[S]) Copy() Guesser {
+	return &MaxScoreGuesser[S]{
+		self.bank,
+		self.bank.Words(),
+		self.scorer.Copy().(S),
+		self.guessMode,
+		self.bank.Words(),
 	}
 }
 
