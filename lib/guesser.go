@@ -3,6 +3,7 @@ package go_wordle_solver
 import (
 	"fmt"
 	"math/rand"
+	"time"
 )
 
 // Guesses words in order to solve a single Wordle.
@@ -99,6 +100,7 @@ func PlayGameWithGuesser[G Guesser](
 // **Average number of guesses:** 4.49 +/- 1.26
 type RandomGuesser struct {
 	possibleWords PossibleWords
+	rng           *rand.Rand
 }
 
 // Constructs a new `RandomGuesser` using the given word bank.
@@ -113,6 +115,7 @@ type RandomGuesser struct {
 func InitRandomGuesser(bank *WordBank) RandomGuesser {
 	return RandomGuesser{
 		possibleWords: bank.Words(),
+		rng:           rand.New(rand.NewSource(time.Now().UnixMicro())),
 	}
 }
 
@@ -124,7 +127,7 @@ func (self *RandomGuesser) SelectNextGuess() Optional[Word] {
 	if self.possibleWords.Len() == 0 {
 		return Optional[Word]{}
 	}
-	random := rand.Int()
+	random := self.rng.Int()
 	return OptionalOf(self.possibleWords.At(random % self.possibleWords.Len()))
 }
 
