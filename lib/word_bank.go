@@ -6,12 +6,14 @@ import (
 	"fmt"
 	"io"
 	"strings"
+
+	"golang.org/x/exp/slices"
 )
 
 // WordBank provides a read-only set of equal length words.
 type WordBank struct {
 	allWords   []Word
-	wordLength uint
+	wordLength uint8
 }
 
 const defaultWordBuffer int = 100
@@ -48,7 +50,7 @@ func WordBankFromReader(r io.Reader) (WordBank, error) {
 	if len(words) == 0 {
 		return WordBank{}, errors.New("At least one word must be provided.")
 	}
-	return WordBank{words[:], uint(wordLength)}, nil
+	return WordBank{slices.Clip(words), uint8(wordLength)}, nil
 }
 
 // Constructs a new `WordBank` struct using the words from the given vector.
@@ -69,10 +71,14 @@ func WordBankFromSlice(words []string) (WordBank, error) {
 		}
 		allWords[i] = word
 	}
-	return WordBank{allWords, uint(wordLength)}, nil
+	return WordBank{allWords, uint8(wordLength)}, nil
+}
+
+func (wb *WordBank) WordLength() uint8 {
+	return uint8(wb.wordLength)
 }
 
 // Returns all possible words from this word bank.
 func (wb *WordBank) Words() PossibleWords {
-	return PossibleWords{wb.allWords}
+	return initPossibleWords(wb.allWords)
 }

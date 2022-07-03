@@ -161,12 +161,12 @@ func TestPresentLetterNotHereAfterHereErrors(t *testing.T) {
 func TestWordRestrictionsIsSatisfiedByNoRestrictions(t *testing.T) {
 	restrictions := InitWordRestrictions(4)
 
-	assert.Assert(t, restrictions.IsSatisfiedBy("abcd"))
-	assert.Assert(t, restrictions.IsSatisfiedBy("zzzz"))
+	assert.Assert(t, restrictions.IsSatisfiedBy(WordFromString("abcd")))
+	assert.Assert(t, restrictions.IsSatisfiedBy(WordFromString("zzzz")))
 
 	// Wrong length
-	assert.Equal(t, restrictions.IsSatisfiedBy(""), false)
-	assert.Equal(t, restrictions.IsSatisfiedBy("abcde"), false)
+	assert.Equal(t, restrictions.IsSatisfiedBy(WordFromString("")), false)
+	assert.Equal(t, restrictions.IsSatisfiedBy(WordFromString("abcde")), false)
 }
 
 func TestWordRestrictionsIsSatisfiedByWithRestrictions(t *testing.T) {
@@ -182,13 +182,13 @@ func TestWordRestrictionsIsSatisfiedByWithRestrictions(t *testing.T) {
 		},
 	}))
 
-	assert.Assert(t, restrictions.IsSatisfiedBy("bdba"))
-	assert.Assert(t, restrictions.IsSatisfiedBy("dabb"))
+	assert.Assert(t, restrictions.IsSatisfiedBy(WordFromString("bdba")))
+	assert.Assert(t, restrictions.IsSatisfiedBy(WordFromString("dabb")))
 
-	assert.Equal(t, restrictions.IsSatisfiedBy("bbba"), false)
-	assert.Equal(t, restrictions.IsSatisfiedBy("bcba"), false)
-	assert.Equal(t, restrictions.IsSatisfiedBy("adbd"), false)
-	assert.Equal(t, restrictions.IsSatisfiedBy("bdbd"), false)
+	assert.Equal(t, restrictions.IsSatisfiedBy(WordFromString("bbba")), false)
+	assert.Equal(t, restrictions.IsSatisfiedBy(WordFromString("bcba")), false)
+	assert.Equal(t, restrictions.IsSatisfiedBy(WordFromString("adbd")), false)
+	assert.Equal(t, restrictions.IsSatisfiedBy(WordFromString("bdbd")), false)
 }
 
 func TestWordRestrictionsState(t *testing.T) {
@@ -249,13 +249,13 @@ func TestWordRestrictionsIsSatisfiedByWithKnownRequiredCount(t *testing.T) {
 		},
 	}))
 
-	assert.Assert(t, restrictions.IsSatisfiedBy("edba"))
-	assert.Assert(t, restrictions.IsSatisfiedBy("dabe"))
-	assert.Assert(t, restrictions.IsSatisfiedBy("daba"))
+	assert.Assert(t, restrictions.IsSatisfiedBy(WordFromString("edba")))
+	assert.Assert(t, restrictions.IsSatisfiedBy(WordFromString("dabe")))
+	assert.Assert(t, restrictions.IsSatisfiedBy(WordFromString("daba")))
 
-	assert.Equal(t, restrictions.IsSatisfiedBy("bdba"), false)
-	assert.Equal(t, restrictions.IsSatisfiedBy("dcba"), false)
-	assert.Equal(t, restrictions.IsSatisfiedBy("adbd"), false)
+	assert.Equal(t, restrictions.IsSatisfiedBy(WordFromString("bdba")), false)
+	assert.Equal(t, restrictions.IsSatisfiedBy(WordFromString("dcba")), false)
+	assert.Equal(t, restrictions.IsSatisfiedBy(WordFromString("adbd")), false)
 }
 
 func TestWordRestrictionsIsSatisfiedByWithMinCount(t *testing.T) {
@@ -271,11 +271,11 @@ func TestWordRestrictionsIsSatisfiedByWithMinCount(t *testing.T) {
 		},
 	}))
 
-	assert.Assert(t, restrictions.IsSatisfiedBy("beba"))
-	assert.Assert(t, restrictions.IsSatisfiedBy("dabb"))
+	assert.Assert(t, restrictions.IsSatisfiedBy(WordFromString("beba")))
+	assert.Assert(t, restrictions.IsSatisfiedBy(WordFromString("dabb")))
 
-	assert.Equal(t, restrictions.IsSatisfiedBy("edba"), false)
-	assert.Equal(t, restrictions.IsSatisfiedBy("ebbd"), false)
+	assert.Equal(t, restrictions.IsSatisfiedBy(WordFromString("edba")), false)
+	assert.Equal(t, restrictions.IsSatisfiedBy(WordFromString("ebbd")), false)
 }
 
 func TestWordRestrictionsEmptyThenMerge(t *testing.T) {
@@ -293,12 +293,12 @@ func TestWordRestrictionsEmptyThenMerge(t *testing.T) {
 
 	assert.NilError(t, restrictions.Merge(&otherRestrictions))
 
-	assert.Assert(t, restrictions.IsSatisfiedBy("babd"))
-	assert.Assert(t, restrictions.IsSatisfiedBy("baba"))
-	assert.Equal(t, restrictions.IsSatisfiedBy("babc"), false)
-	assert.Equal(t, restrictions.IsSatisfiedBy("badb"), false)
-	assert.Equal(t, restrictions.IsSatisfiedBy("adbb"), false)
-	assert.Equal(t, restrictions.IsSatisfiedBy("dbba"), false)
+	assert.Assert(t, restrictions.IsSatisfiedBy(WordFromString("babd")))
+	assert.Assert(t, restrictions.IsSatisfiedBy(WordFromString("baba")))
+	assert.Equal(t, restrictions.IsSatisfiedBy(WordFromString("babc")), false)
+	assert.Equal(t, restrictions.IsSatisfiedBy(WordFromString("badb")), false)
+	assert.Equal(t, restrictions.IsSatisfiedBy(WordFromString("adbb")), false)
+	assert.Equal(t, restrictions.IsSatisfiedBy(WordFromString("dbba")), false)
 }
 
 func TestWordRestrictionsMerge(t *testing.T) {
@@ -325,8 +325,8 @@ func TestWordRestrictionsMerge(t *testing.T) {
 
 	assert.NilError(t, restrictions.Merge(&otherRestrictions))
 
-	assert.Assert(t, restrictions.IsSatisfiedBy("babe"))
-	assert.Equal(t, restrictions.IsSatisfiedBy("baee"), false)
+	assert.Assert(t, restrictions.IsSatisfiedBy(WordFromString("babe")))
+	assert.Equal(t, restrictions.IsSatisfiedBy(WordFromString("baee")), false)
 }
 
 func TestWordRestrictionsMergeWrongLength(t *testing.T) {

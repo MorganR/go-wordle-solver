@@ -32,3 +32,15 @@ func allLetters(s string, fn func(rune) bool) bool {
 	}
 	return true
 }
+
+func filter[T any](s []T, fn func(T) bool) []T {
+	iNew := 0
+	for iOld, value := range s {
+		if !fn(value) {
+			continue
+		}
+		s[iNew] = s[iOld]
+		iNew++
+	}
+	return s[:iNew]
+}

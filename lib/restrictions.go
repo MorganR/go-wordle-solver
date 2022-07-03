@@ -353,12 +353,13 @@ func (self *WordRestrictions) Merge(other *WordRestrictions) error {
 }
 
 /// Returns `true` iff the given word satisfies these restrictions.
-func (self *WordRestrictions) IsSatisfiedBy(wordStr string) bool {
-	word := []rune(wordStr)
-	return len(word) == int(self.wordLength) &&
+func (self *WordRestrictions) IsSatisfiedBy(word Word) bool {
+	wordLen := word.Len()
+	return wordLen == int(self.wordLength) &&
 		allPairs(self.presentLetters, func(letter rune, presence *presentLetter) bool {
 			countFound := uint8(0)
-			for i, wordLetter := range word {
+			for i := 0; i < wordLen; i++ {
+				wordLetter := word.At(i)
 				if wordLetter == rune(letter) {
 					countFound += 1
 					if presence.state(uint8(i)) == llsNotHere {
@@ -373,7 +374,7 @@ func (self *WordRestrictions) IsSatisfiedBy(wordStr string) bool {
 			}
 			return countFound >= presence.minCount
 		}) &&
-		allValues(word, func(letter rune) bool {
+		word.AllLetters(func(letter rune) bool {
 			return !slices.Contains(self.notPresentLetters, letter)
 		})
 }

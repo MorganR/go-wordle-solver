@@ -25,3 +25,7 @@ func (self Word) String() string {
 func (self Word) At(i int) rune {
 	return self.runes[i]
 }
+
+func (self Word) AllLetters(fn func(rune) bool) bool {
+	return allValues(self.runes, fn)
+}
