@@ -48,13 +48,10 @@ func newPresentLetter(wordLength uint8) *presentLetter {
 	for i := range states {
 		states[i] = llsUnknown
 	}
-	return &presentLetter{
-		maybeRequiredCount: Optional[uint8]{},
-		minCount:           1,
-		numHere:            0,
-		numNotHere:         0,
-		locatedState:       states,
-	}
+	pl := new(presentLetter)
+	pl.minCount = 1
+	pl.locatedState = states
+	return pl
 }
 
 /// Returns whether the letter must be in, or not in, the given location, or if that is not yet
@@ -333,7 +330,12 @@ func (self *WordRestrictions) Merge(other *WordRestrictions) error {
 		if _, isPresent := self.presentLetters[notPresentLetter]; isPresent {
 			return errors.New("Can't merge incompatible restrictions.")
 		}
-		self.notPresentLetters = append(self.notPresentLetters, notPresentLetter)
+		for _, otherNotPresent := range other.notPresentLetters {
+			if slices.Contains(self.notPresentLetters, otherNotPresent) {
+				continue
+			}
+			self.notPresentLetters = append(self.notPresentLetters, notPresentLetter)
+		}
 	}
 	for letter, otherPresence := range other.presentLetters {
 		if slices.Contains(self.notPresentLetters, letter) {
@@ -360,7 +362,7 @@ func (self *WordRestrictions) IsSatisfiedBy(word Word) bool {
 			countFound := uint8(0)
 			for i := 0; i < wordLen; i++ {
 				wordLetter := word.At(i)
-				if wordLetter == rune(letter) {
+				if wordLetter == letter {
 					countFound += 1
 					if presence.state(uint8(i)) == llsNotHere {
 						return false
@@ -471,17 +473,7 @@ func (self *WordRestrictions) setLetterPresentNotHere(
 		return err
 	}
 	numTimesPresent := countNumTimesInGuess(letter, result)
-	// Remove from the not present letters if it was present. This could happen if the guess
-	// included the letter in two places, but the correct word only included it in the latter
-	// place.
-	if letterIndex := slices.Index(self.notPresentLetters, letter); letterIndex >= 0 {
-		self.notPresentLetters = slices.Delete(self.notPresentLetters, letterIndex, letterIndex+1)
-		// If the letter is present, but another location was marked `NotPresent`, then it means it's
-		// only in the word as many times as it was given a `Correct` or  `PresentNotHere`
-		return presence.setRequiredCount(numTimesPresent)
-	} else {
-		return presence.possiblyBumpMinCount(numTimesPresent)
-	}
+	return presence.possiblyBumpMinCount(numTimesPresent)
 }
 
 func (self *WordRestrictions) setLetterNotPresent(
@@ -489,14 +481,20 @@ func (self *WordRestrictions) setLetterNotPresent(
 	location uint8,
 	result *GuessResult,
 ) error {
+	numTimesPresent := countNumTimesInGuess(letter, result)
 	if presence, isPresent := self.presentLetters[letter]; isPresent {
 		if presence.state(location) == llsHere {
 			return fmt.Errorf("Can't mark the letter %c as not present at %v since it's already marked as present here.", letter, location)
 		}
-		numTimesPresent := countNumTimesInGuess(letter, result)
 		return presence.setRequiredCount(numTimesPresent)
+	} else if numTimesPresent > 0 {
+		pl := newPresentLetter(uint8(result.Guess.Len()))
+		self.presentLetters[letter] = pl
+		return pl.setRequiredCount(numTimesPresent)
 	}
-	self.notPresentLetters = append(self.notPresentLetters, letter)
+	if !slices.Contains(self.notPresentLetters, letter) {
+		self.notPresentLetters = append(self.notPresentLetters, letter)
+	}
 	return nil
 }
 

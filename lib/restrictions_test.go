@@ -191,6 +191,32 @@ func TestWordRestrictionsIsSatisfiedByWithRestrictions(t *testing.T) {
 	assert.Equal(t, restrictions.IsSatisfiedBy(WordFromString("bdbd")), false)
 }
 
+func TestWordRestrictionsWithDuplicateNotHereLetter(t *testing.T) {
+	restrictions := InitWordRestrictions(5)
+
+	assert.NilError(t, restrictions.Update(&GuessResult{
+		Guess: WordFromString("emcee"),
+		Results: []LetterResult{
+			LetterResultNotPresent,
+			LetterResultNotPresent,
+			LetterResultNotPresent,
+			LetterResultNotPresent,
+			LetterResultCorrect,
+		},
+	}))
+
+	assert.Equal(t, restrictions.State(&LocatedLetter{'e', 0}), LetterRestrictionPresentNotHere)
+	assert.Equal(t, restrictions.State(&LocatedLetter{'e', 1}), LetterRestrictionPresentNotHere)
+	assert.Equal(t, restrictions.State(&LocatedLetter{'e', 2}), LetterRestrictionPresentNotHere)
+	assert.Equal(t, restrictions.State(&LocatedLetter{'e', 3}), LetterRestrictionPresentNotHere)
+	assert.Equal(t, restrictions.State(&LocatedLetter{'e', 4}), LetterRestrictionHere)
+	assert.Equal(t, restrictions.State(&LocatedLetter{'s', 0}), LetterRestrictionUnknown)
+	assert.Equal(t, restrictions.State(&LocatedLetter{'t', 1}), LetterRestrictionUnknown)
+	assert.Equal(t, restrictions.State(&LocatedLetter{'a', 2}), LetterRestrictionUnknown)
+	assert.Equal(t, restrictions.State(&LocatedLetter{'v', 3}), LetterRestrictionUnknown)
+	assert.Assert(t, restrictions.IsSatisfiedBy(WordFromString("stave")))
+}
+
 func TestWordRestrictionsState(t *testing.T) {
 	restrictions := InitWordRestrictions(4)
 
