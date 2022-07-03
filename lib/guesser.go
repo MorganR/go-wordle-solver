@@ -145,3 +145,81 @@ func (self *RandomGuesser) SelectNextGuess() Optional[Word] {
 func (self *RandomGuesser) PossibleWords() *PossibleWords {
 	return &self.possibleWords
 }
+
+// Determines how the best guess should be chosen.
+type GuessMode int
+
+const (
+	// The best guess can be chosen from all words in the word bank.
+	GuessModeAll GuessMode = iota
+	// The best guess can only be chosen from remaining possible words.
+	GuessModePossible
+)
+
+type MaxScoreGuesser[S WordScorer] struct {
+	bank           *WordBank
+	possibleWords  PossibleWords
+	scorer         S
+	guessMode      GuessMode
+	unguessedWords PossibleWords
+}
+
+func InitMaxScoreGuesser[S WordScorer](bank *WordBank, scorer S, mode GuessMode) MaxScoreGuesser[S] {
+	return MaxScoreGuesser[S]{
+		bank:           bank,
+		possibleWords:  bank.Words(),
+		scorer:         scorer,
+		guessMode:      mode,
+		unguessedWords: bank.Words(),
+	}
+}
+
+func (self *MaxScoreGuesser[S]) Reset() {
+	self.possibleWords = self.bank.Words()
+	self.unguessedWords = self.bank.Words()
+}
+
+func (self *MaxScoreGuesser[S]) Update(result *GuessResult) error {
+	self.unguessedWords.Remove(result.Guess)
+	err := self.possibleWords.Filter(result)
+	if err != nil {
+		return err
+	}
+	return self.scorer.Update(result.Guess, &self.possibleWords)
+}
+
+func (self *MaxScoreGuesser[S]) SelectNextGuess() Optional[Word] {
+	if self.possibleWords.Len() == 0 {
+		return Optional[Word]{}
+	}
+
+	if self.guessMode == GuessModeAll && self.possibleWords.Len() > 2 {
+		bestWord := self.unguessedWords.At(0)
+		bestScore := self.scorer.ScoreWord(bestWord)
+		scoresAllSame := true
+		length := self.unguessedWords.Len()
+		for i := 1; i < length; i++ {
+			word := self.unguessedWords.At(i)
+			score := self.scorer.ScoreWord(word)
+			if bestScore != score {
+				scoresAllSame = false
+				if bestScore < score {
+					bestScore = score
+					bestWord = word
+				}
+			}
+		}
+		// If the scores are all the same, be sure to use a possible word so there is a chance of
+		// getting it right.
+		if scoresAllSame {
+			return OptionalOf(self.possibleWords.At(0))
+		}
+		return OptionalOf(bestWord)
+	}
+
+	return OptionalOf(self.possibleWords.Maximizing(self.scorer.ScoreWord))
+}
+
+func (self *MaxScoreGuesser[S]) PossibleWords() *PossibleWords {
+	return &self.possibleWords
+}

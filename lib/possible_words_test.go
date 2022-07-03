@@ -36,3 +36,31 @@ func TestPossibleWordsFilter(t *testing.T) {
 	assert.DeepEqual(t, pw.At(0), WordFromString("mad"))
 	assert.DeepEqual(t, pw.At(1), WordFromString("bad"))
 }
+
+func TestPossibleWordsRemove(t *testing.T) {
+	pw := initPossibleWords([]Word{WordFromString("foo"), WordFromString("bar"), WordFromString("baz")})
+
+	assert.Assert(t, !pw.Remove(WordFromString("zzz")))
+	assert.Equal(t, pw.Len(), 3)
+
+	assert.Assert(t, pw.Remove(WordFromString("bar")))
+	assert.Equal(t, pw.Len(), 2)
+	assert.DeepEqual(t, pw.At(0), WordFromString("foo"))
+	assert.DeepEqual(t, pw.At(1), WordFromString("baz"))
+}
+
+func TestPossibleWordsMaximizing(t *testing.T) {
+	pw := initPossibleWords([]Word{WordFromString("aaa"), WordFromString("aba"), WordFromString("bbb"), WordFromString("cbc")})
+
+	mostBs := func(w Word) int64 {
+		var sum int64 = 0
+		for i := 0; i < w.Len(); i++ {
+			if w.At(i) == 'b' {
+				sum += 1
+			}
+		}
+		return sum
+	}
+
+	assert.DeepEqual(t, pw.Maximizing(mostBs), WordFromString("bbb"))
+}
