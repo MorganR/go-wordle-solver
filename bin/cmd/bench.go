@@ -10,7 +10,7 @@ import (
 )
 
 const (
-	maxGuesses uint8 = 128
+	maxGuesses int = 128
 )
 
 var BenchListPath string
@@ -40,14 +40,18 @@ var benchCmd = &cobra.Command{
 		countNumGuesses := make([]int, maxGuesses)
 		for i := 0; i < benchLen; i++ {
 			objective := benchWords.At(i)
-			result := gws.PlayGameWithGuesser(objective, maxGuesses, &guesser)
+			result, err := gws.PlayGameWithGuesser(objective, maxGuesses, &guesser)
+			if err != nil {
+				fmt.Fprintf(os.Stderr, "Error while guessing %s during benchmark.\n", objective)
+				return err
+			}
 			if result.Status != gws.GameSuccess {
 				fmt.Fprintf(os.Stderr, "Failed to guess %s during benchmark.\n", objective)
-				printGuesses(result.Data)
+				printGuesses(result.Turns)
 				os.Exit(1)
 				return nil
 			}
-			numGuesses := len(result.Data.Turns)
+			numGuesses := len(result.Turns)
 			countNumGuesses[numGuesses-1] = countNumGuesses[numGuesses-1] + 1
 		}
 		end := time.Now()

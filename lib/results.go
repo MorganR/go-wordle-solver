@@ -46,12 +46,6 @@ type TurnData struct {
 	NumPossibleWordsBeforeGuess uint
 }
 
-// The data from a game that was played.
-type GameData struct {
-	// Data for each turn that was played.
-	Turns []TurnData
-}
-
 // Whether the game was won or lost.
 type GameStatus int
 
@@ -60,16 +54,14 @@ const (
 	GameSuccess GameStatus = iota
 	// Indicates that the guesser failed to guess the word under the guess limit.
 	GameFailure
-	// Indicates that the given word was not in the guesser's word bank.
-	UnknownWord
 )
 
 // The result of a Wordle game.
 type GameResult struct {
 	// Whether the game was won or lost.
 	Status GameStatus
-	// Additional data about the game. Only set if `Status` is `GameSuccess` or `GameFailure`.
-	Data *GameData
+	// Data for each turn that was played.
+	Turns []TurnData
 }
 
 /// Determines the result of the given `guess` when applied to the given `objective`.

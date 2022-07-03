@@ -1,6 +1,7 @@
 package go_wordle_solver
 
 import (
+	"errors"
 	"fmt"
 	"math/rand"
 	"time"
@@ -8,6 +9,9 @@ import (
 
 // Guesses words in order to solve a single Wordle.
 type Guesser interface {
+	// Resets this guesser for solving a new puzzle.
+	Reset()
+
 	// Updates this guesser with information about a word.
 	Update(result *GuessResult) error
 
@@ -46,20 +50,21 @@ type Guesser interface {
 // ```
 func PlayGameWithGuesser[G Guesser](
 	objective Word,
-	maxNumGuesses uint8,
+	maxNumGuesses int,
 	guesser G,
-) GameResult {
+) (GameResult, error) {
+	guesser.Reset()
 	turns := make([]TurnData, 0, maxNumGuesses)
-	for i := uint8(0); i < maxNumGuesses; i++ {
+	for i := 0; i < maxNumGuesses; i++ {
 		maybeGuess := guesser.SelectNextGuess()
 		if !maybeGuess.HasValue() {
-			return GameResult{UnknownWord, nil}
+			return GameResult{}, errors.New("No more valid guesses.")
 		}
 		guess := maybeGuess.Value()
 		numPossibleWordsBeforeGuess := guesser.PossibleWords().Len()
 		result, err := GetResultForGuess(objective, guess)
 		if err != nil {
-			return GameResult{UnknownWord, nil}
+			return GameResult{}, fmt.Errorf("Couldn't get result for guess %s, error: %s", guess, err)
 		}
 		turns = append(turns, TurnData{
 			guess,
@@ -68,14 +73,14 @@ func PlayGameWithGuesser[G Guesser](
 		if allValues(result.Results, func(lr LetterResult) bool {
 			return lr == LetterResultCorrect
 		}) {
-			return GameResult{GameSuccess, &GameData{turns}}
+			return GameResult{GameSuccess, turns}, nil
 		}
 		err = guesser.Update(&result)
 		if err != nil {
 			panic(fmt.Sprintf("Failed to update the guesser. Error: %s", err))
 		}
 	}
-	return GameResult{GameFailure, &GameData{turns}}
+	return GameResult{GameFailure, turns}, nil
 }
 
 // Guesses at random from the possible words that meet the restrictions.
@@ -99,6 +104,7 @@ func PlayGameWithGuesser[G Guesser](
 //
 // **Average number of guesses:** 4.49 +/- 1.26
 type RandomGuesser struct {
+	bank          *WordBank
 	possibleWords PossibleWords
 	rng           *rand.Rand
 }
@@ -114,9 +120,14 @@ type RandomGuesser struct {
 // ```
 func InitRandomGuesser(bank *WordBank) RandomGuesser {
 	return RandomGuesser{
+		bank:          bank,
 		possibleWords: bank.Words(),
 		rng:           rand.New(rand.NewSource(time.Now().UnixMicro())),
 	}
+}
+
+func (self *RandomGuesser) Reset() {
+	self.possibleWords = self.bank.Words()
 }
 
 func (self *RandomGuesser) Update(result *GuessResult) error {

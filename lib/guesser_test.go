@@ -82,17 +82,18 @@ func TestPlayGameWithUnknownWordRandom(t *testing.T) {
 	bank, _ := WordBankFromSlice([]string{"abcz", "weyz", "defy", "ghix"})
 	guesser := InitRandomGuesser(&bank)
 
-	got := PlayGameWithGuesser(WordFromString("nope"), 10, &guesser)
-	assert.Equal(t, got.Status, UnknownWord)
+	_, err := PlayGameWithGuesser(WordFromString("nope"), 10, &guesser)
+	assert.Error(t, err, "No more valid guesses.")
 }
 
 func TestPlayGameWithKnownWordRandom(t *testing.T) {
 	bank, _ := WordBankFromSlice([]string{"abcz", "weyz", "defy", "ghix"})
 	guesser := InitRandomGuesser(&bank)
 
-	got := PlayGameWithGuesser(WordFromString("abcz"), 10, &guesser)
+	got, err := PlayGameWithGuesser(WordFromString("abcz"), 10, &guesser)
 
+	assert.NilError(t, err)
 	assert.Equal(t, got.Status, GameSuccess)
-	assert.Assert(t, len(got.Data.Turns) <= 4, "Random guesser took more than 4 guesses.")
-	assert.DeepEqual(t, got.Data.Turns[len(got.Data.Turns)-1].Guess, WordFromString("abcz"))
+	assert.Assert(t, len(got.Turns) <= 4, "Random guesser took more than 4 guesses.")
+	assert.DeepEqual(t, got.Turns[len(got.Turns)-1].Guess, WordFromString("abcz"))
 }

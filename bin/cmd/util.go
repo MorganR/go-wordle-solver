@@ -6,8 +6,8 @@ import (
 	gws "github.com/MorganR/go-wordle-solver/lib"
 )
 
-func printGuesses(data *gws.GameData) {
-	for i, td := range data.Turns {
+func printGuesses(turns []gws.TurnData) {
+	for i, td := range turns {
 		fmt.Printf("\t%v: %s (%v remaining)\n", i+1, td.Guess, td.NumPossibleWordsBeforeGuess)
 	}
 }

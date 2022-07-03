@@ -1,5 +1,7 @@
 package go_wordle_solver
 
+import "golang.org/x/exp/slices"
+
 type PossibleWords struct {
 	words        []Word
 	restrictions WordRestrictions
@@ -7,7 +9,7 @@ type PossibleWords struct {
 
 func initPossibleWords(words []Word) PossibleWords {
 	return PossibleWords{
-		words,
+		slices.Clone(words),
 		InitWordRestrictions(uint8(words[0].Len())),
 	}
 }

@@ -41,20 +41,21 @@ var solveCmd = &cobra.Command{
 
 		start := time.Now()
 		guesser := gws.InitRandomGuesser(&wordBank)
-		result := gws.PlayGameWithGuesser(objective, 128, &guesser)
+		result, err := gws.PlayGameWithGuesser(objective, 128, &guesser)
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "Internal error: %s\n", err)
+			os.Exit(1)
+			return
+		}
 		end := time.Now()
 		elapsed := end.Sub(start)
 		switch result.Status {
 		case gws.GameSuccess:
-			fmt.Printf("Solved! It took me %v guesses.\n", len(result.Data.Turns))
-			printGuesses(result.Data)
+			fmt.Printf("Solved! It took me %v guesses.\n", len(result.Turns))
+			printGuesses(result.Turns)
 		case gws.GameFailure:
 			fmt.Println("Failed :( I couldn't guess the word within the guess limit.")
-			printGuesses(result.Data)
-		case gws.UnknownWord:
-			// This should be impossible since the word is already verified to be in the word bank.
-			fmt.Println("Internal error.")
-			os.Exit(1)
+			printGuesses(result.Turns)
 		}
 		fmt.Printf("Guessing took %s.\n", elapsed)
 	},
