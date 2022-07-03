@@ -18,6 +18,7 @@ var solveCmd = &cobra.Command{
 	Short: "Solves a single Wordle puzzle.",
 	Args:  cobra.ExactArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
+		initRoot()
 		objective := gws.WordFromString(args[0])
 
 		if objective.Len() != int(wordBank.WordLength()) {
@@ -40,8 +41,7 @@ var solveCmd = &cobra.Command{
 		}
 
 		start := time.Now()
-		guesser := gws.InitRandomGuesser(&wordBank)
-		result, err := gws.PlayGameWithGuesser(objective, 128, &guesser)
+		result, err := gws.PlayGameWithGuesser(objective, 128, guesser)
 		if err != nil {
 			fmt.Fprintf(os.Stderr, "Internal error: %s\n", err)
 			os.Exit(1)

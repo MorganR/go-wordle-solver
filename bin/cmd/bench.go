@@ -24,6 +24,7 @@ var benchCmd = &cobra.Command{
 	Use:   "bench",
 	Short: "Benchmarks an algorithm against a given word list.",
 	RunE: func(cmd *cobra.Command, args []string) error {
+		initRoot()
 		f, err := os.Open(BenchListPath)
 		if err != nil {
 			return err
@@ -35,12 +36,11 @@ var benchCmd = &cobra.Command{
 		benchWords := benchBank.Words()
 
 		start := time.Now()
-		guesser := gws.InitRandomGuesser(&wordBank)
 		benchLen := benchWords.Len()
 		countNumGuesses := make([]int, maxGuesses)
 		for i := 0; i < benchLen; i++ {
 			objective := benchWords.At(i)
-			result, err := gws.PlayGameWithGuesser(objective, maxGuesses, &guesser)
+			result, err := gws.PlayGameWithGuesser(objective, maxGuesses, guesser)
 			if err != nil {
 				fmt.Fprintf(os.Stderr, "Error while guessing %s during benchmark.\n", objective)
 				return err
