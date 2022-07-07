@@ -2,6 +2,7 @@ package go_wordle_solver
 
 import (
 	"fmt"
+	"os"
 	"testing"
 
 	"gotest.tools/v3/assert"
@@ -142,4 +143,60 @@ func TestPlayGameWithKnownWordMaxScore(t *testing.T) {
 	assert.Equal(t, got.Status, GameSuccess)
 	assert.Assert(t, len(got.Turns) <= 4, "Max score guesser took more than 4 guesses.")
 	assert.DeepEqual(t, got.Turns[len(got.Turns)-1].Guess, WordFromString("abcz"))
+}
+
+func BenchmarkPlayGameWithRandom(b *testing.B) {
+	f, err := os.Open("../data/1000-improved-words-shuffled.txt")
+	if err != nil {
+		b.Fatal(err)
+	}
+	bank, err := WordBankFromReader(f)
+	if err != nil {
+		b.Fatal(err)
+	}
+	guesser := InitRandomGuesser(&bank)
+	allWords := bank.Words()
+	numWords := allWords.Len()
+
+	for i := 0; i < b.N; i++ {
+		guesser.Reset()
+		word := allWords.At(i % numWords)
+		result, err := PlayGameWithGuesser(word, 128, &guesser)
+		if err != nil {
+			b.Fatal(err)
+		}
+		if result.Status != GameSuccess {
+			b.Fatalf("Game failed for word %s, result: %v", word, result)
+		}
+	}
+}
+
+func BenchmarkPlayGameWithMaxScore(b *testing.B) {
+	f, err := os.Open("../data/1000-improved-words-shuffled.txt")
+	if err != nil {
+		b.Fatal(err)
+	}
+	bank, err := WordBankFromReader(f)
+	if err != nil {
+		b.Fatal(err)
+	}
+	scorer, err := InitMaxEliminationsScorer(&bank)
+	if err != nil {
+		b.Fatal(err)
+	}
+	guesser := InitMaxScoreGuesser(&bank, &scorer, GuessModeAll)
+	allWords := bank.Words()
+	numWords := allWords.Len()
+
+	for i := 0; i < b.N; i++ {
+		guesser.Reset()
+		word := allWords.At(i % numWords)
+		result, err := PlayGameWithGuesser(word, 128, &guesser)
+		if err != nil {
+			b.Fatal(err)
+		}
+		if result.Status != GameSuccess {
+			b.Fatalf("Game failed for word %s, result: %v", word, result)
+		}
+	}
 }
