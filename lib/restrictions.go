@@ -382,11 +382,11 @@ func (self *WordRestrictions) IsSatisfiedBy(word Word) bool {
 }
 
 /// Returns true iff the exact state of the given letter at the given location is already known.
-func (self *WordRestrictions) IsStateKnown(ll *LocatedLetter) bool {
-	if presence, isPresent := self.presentLetters[ll.Letter]; isPresent {
-		return presence.state(ll.Location) != llsUnknown
+func (self *WordRestrictions) IsStateKnown(letter rune, location uint8) bool {
+	if presence, isPresent := self.presentLetters[letter]; isPresent {
+		return presence.state(location) != llsUnknown
 	}
-	return slices.Contains(self.notPresentLetters, ll.Letter)
+	return slices.Contains(self.notPresentLetters, letter)
 }
 
 /// Returns the current known state of this letter, either:
@@ -396,9 +396,9 @@ func (self *WordRestrictions) IsStateKnown(ll *LocatedLetter) bool {
 ///  * `LetterRestrictionPresentNotHere` -> The letter is present but not here.
 ///  * `LetterRestrictionPresentMaybeHere` -> The letter is present, but we don't know if it's here or not.
 ///  * `LetterRestrictionHere` -> The letter goes here.
-func (self *WordRestrictions) State(ll *LocatedLetter) LetterRestriction {
-	if presence, isPresent := self.presentLetters[ll.Letter]; isPresent {
-		switch presence.state(ll.Location) {
+func (self *WordRestrictions) State(letter rune, location uint8) LetterRestriction {
+	if presence, isPresent := self.presentLetters[letter]; isPresent {
+		switch presence.state(location) {
 		case llsHere:
 			return LetterRestrictionHere
 		case llsNotHere:
@@ -407,7 +407,7 @@ func (self *WordRestrictions) State(ll *LocatedLetter) LetterRestriction {
 			return LetterRestrictionPresentMaybeHere
 		}
 	}
-	if slices.Contains(self.notPresentLetters, ll.Letter) {
+	if slices.Contains(self.notPresentLetters, letter) {
 		return LetterRestrictionNotPresent
 	}
 	return LetterRestrictionUnknown
