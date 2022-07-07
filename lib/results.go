@@ -2,8 +2,10 @@ package go_wordle_solver
 
 import "fmt"
 
-// The result of a given letter at a specific location. There is some complexity here when a
-// letter appears in a word more than once. See [`GuessResult`] for more details.
+// LetterResult indicates the result of a given letter at a specific location.
+//
+// There is some complexity here when a letter appears in a word more than once. See [GuessResult]
+// for more details.
 type LetterResult uint8
 
 const (
@@ -18,16 +20,32 @@ const (
 	LetterResultNotPresent
 )
 
+// String converts [LetterResult] into a readable string.
+func (lr LetterResult) String() string {
+	switch lr {
+	case LetterResultUnknown:
+		return "unknown"
+	case LetterResultCorrect:
+		return "correct"
+	case LetterResultPresentNotHere:
+		return "present not here"
+	case LetterResultNotPresent:
+		return "not present"
+	default:
+		return "invalid LetterResult"
+	}
+}
+
 // A compressed form of LetterResults. Can only store vectors of up to
-// [`MaxLettersInCompressedGuessResult`] results.
+// [MaxLettersInCompressedGuessResult] results.
 type CompressedGuessResult uint32
 
-// How many letters can be stored in CompressedGuessResult.
+// How many letters can be stored in [CompressedGuessResult].
 const MaxLettersInCompressedGuessResult uint8 = 32 / 3
 
-/// Creates a compressed form of the given letter results.
-///
-/// Returns a [`WordleError::WordLength`] error if `letter_results` has more than 10 values.
+// Creates a compressed form of the given letter results.
+//
+// Returns an error if letterResults has more than [MaxLettersInCompressedGuessResult] values.
 func CompressResults(letterResults []LetterResult) (CompressedGuessResult, error) {
 	if len(letterResults) > int(MaxLettersInCompressedGuessResult) {
 		return 0, fmt.Errorf("Results can only be compressed with up to %v letters. This result has %v.", MaxLettersInCompressedGuessResult, len(letterResults))
@@ -41,19 +59,19 @@ func CompressResults(letterResults []LetterResult) (CompressedGuessResult, error
 	return data, nil
 }
 
-// The result of a single word guess.
+// GuessResult is the result of a single word guess.
 //
 // There is some complexity here when the guess has duplicate letters. Duplicate letters are
-// matched to [`LetterResult`]s as follows:
+// matched to [LetterResult]s as follows:
 //
-// 1. All letters in the correct location are marked `Correct`.
+// 1. All letters in the correct location are marked [LetterResultCorrect].
 // 2. For any remaining letters, if the objective word has more letters than were marked correct,
-//    then these letters are marked as `PresentNotHere` starting from the beginning of the word,
-//    until all letters have been accounted for.
-// 3. Any remaining letters are marked as `NotPresent`.
+//    then these letters are marked as [LetterResultPresentNotHere] starting from the beginning of
+//    the word, until all letters have been accounted for.
+// 3. Any remaining letters are marked as [LetterResultNotPresent].
 //
 // For example, if the guess was "sassy" for the objective word "mesas", then the results would
-// be: `[PresentNotHere, PresentNotHere, Correct, NotPresent, NotPresent]`.
+// be: [PresentNotHere, PresentNotHere, Correct, NotPresent, NotPresent].
 type GuessResult struct {
 	// The guess that was made.
 	Guess Word
@@ -61,7 +79,7 @@ type GuessResult struct {
 	Results []LetterResult
 }
 
-// Data about a single turn of a Wordle game.
+// TurnData provides data about a single turn of a Wordle game.
 type TurnData struct {
 	// The guess that was made this turn.
 	Guess Word
@@ -69,7 +87,7 @@ type TurnData struct {
 	NumPossibleWordsBeforeGuess uint
 }
 
-// Whether the game was won or lost.
+// GameStatus indicates whether the game was won or lost.
 type GameStatus int
 
 const (
@@ -79,7 +97,7 @@ const (
 	GameFailure
 )
 
-// String prints GameStatus as a readable string.
+// String prints [GameStatus] as a readable string.
 func (gs GameStatus) String() string {
 	switch gs {
 	case GameSuccess:
@@ -91,7 +109,7 @@ func (gs GameStatus) String() string {
 	}
 }
 
-// The result of a Wordle game.
+// GameResult is the result of a Wordle game.
 type GameResult struct {
 	// Whether the game was won or lost.
 	Status GameStatus
@@ -99,32 +117,7 @@ type GameResult struct {
 	Turns []TurnData
 }
 
-/// Determines the result of the given `guess` when applied to the given `objective`.
-///
-/// ```
-/// result := GetResultForGuess("mesas", "sassy")
-///
-/// TODO: Update example.
-/// assert!(
-///     matches!(
-///         result,
-///         Ok(GuessResult {
-///             guess: []rune("sassy"),
-///             results: _
-///         })
-///     )
-/// );
-/// assert_eq!(
-///     result.unwrap().results,
-///     vec![
-///         LetterResult::PresentNotHere,
-///         LetterResult::PresentNotHere,
-///         LetterResult::Correct,
-///         LetterResult::NotPresent,
-///         LetterResult::NotPresent
-///     ]
-/// );
-/// ```
+// GetResultForGuess determines the result of the given guess when applied to the given objective.
 func GetResultForGuess(objective, guess Word) (GuessResult, error) {
 	// Convert to runes to properly handle unicode.
 	guessLen := guess.Len()

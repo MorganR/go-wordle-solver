@@ -1,7 +1,6 @@
 package go_wordle_solver
 
 import (
-	"errors"
 	"fmt"
 
 	"golang.org/x/exp/slices"
@@ -28,21 +27,21 @@ func (lls locatedLetterState) String() string {
 	return "invalid value"
 }
 
-/// Indicates information about a letter that is in the word.
+// Indicates information about a letter that is in the word.
 type presentLetter struct {
-	/// If known, the letter must appear exactly this many times in the word.
+	// If known, the letter must appear exactly this many times in the word.
 	maybeRequiredCount Optional[uint8]
-	/// The minimum number of times this letter must appear in the word.
+	// The minimum number of times this letter must appear in the word.
 	minCount uint8
-	/// The number of locations we know the letter must appear.
+	// The number of locations we know the letter must appear.
 	numHere uint8
-	/// The number of locations we know the letter must not appear.
+	// The number of locations we know the letter must not appear.
 	numNotHere uint8
-	/// The status of the letter at each location in the word.
+	// The status of the letter at each location in the word.
 	locatedState []locatedLetterState
 }
 
-/// Constructs a `PresentLetter` for use with words of the given length.
+// Constructs a [presentLetter] for use with words of the given length.
 func newPresentLetter(wordLength uint8) *presentLetter {
 	states := make([]locatedLetterState, wordLength)
 	for i := range states {
@@ -54,19 +53,18 @@ func newPresentLetter(wordLength uint8) *presentLetter {
 	return pl
 }
 
-/// Returns whether the letter must be in, or not in, the given location, or if that is not yet
-/// known.
+// Returns whether the letter must be in, or not in, the given location, or if that is not yet
+// known.
 func (self *presentLetter) state(index uint8) locatedLetterState {
 	return self.locatedState[index]
 }
 
-/// Sets that this letter must be at the given index.
-///
-/// If the required count for this letter is known, then this may fill any remaining `Unknown`
-/// locations with either `Here` or `NotHere` accordingly.
-///
-/// This returns a [`WordleError::InvalidResults`] error if this letter is already known not to
-/// be at the given index.
+// Sets that this letter must be at the given index.
+//
+// If the required count for this letter is known, then this may fill any remaining [llsUnknown]
+// locations with either [llsHere] or [llsNotHere] accordingly.
+//
+// This returns an error if this letter is already known not to be at the given index.
 func (self *presentLetter) setMustBeAt(index uint8) error {
 	previous := self.locatedState[index]
 	switch previous {
@@ -98,13 +96,12 @@ func (self *presentLetter) setMustBeAt(index uint8) error {
 	return nil
 }
 
-/// Sets that this letter must not be at the given index.
-///
-/// If setting this leaves only as many `Here` and `Unknown` locations as the value of
-/// `minCount`, then this sets the `Unknown` locations to `Here`.
-///
-/// This returns a [`WordleError::InvalidResults`] error if this letter is already known to be
-/// at the given index.
+// Sets that this letter must not be at the given index.
+//
+// If setting this leaves only as many [llsHere] and [llsUnknown] locations as the value of
+// [presentLetter.minCount], then this sets the [llsUnknown] locations to [llsHere].
+//
+// This returns an error if this letter is already known to be at the given index.
 func (self *presentLetter) setMustNotBeAt(index uint8) error {
 	previous := self.locatedState[index]
 	switch previous {
@@ -126,10 +123,10 @@ func (self *presentLetter) setMustNotBeAt(index uint8) error {
 	return nil
 }
 
-/// Sets the maximum number of times this letter can appear in the word.
-///
-/// Returns a [`WordleError::InvalidResults`] error if the required count is already set to a
-/// different value, or if the `minCount` is known to be higher than the provided value.
+// Sets the maximum number of times this letter can appear in the word.
+//
+// Returns an error if the required count is already set to a different value, or if the
+// [presentLetter.minCount] is known to be higher than the provided value.
 func (self *presentLetter) setRequiredCount(count uint8) error {
 	if self.maybeRequiredCount.HasValue() {
 		if self.maybeRequiredCount.Value() != count {
@@ -155,11 +152,11 @@ func (self *presentLetter) setRequiredCount(count uint8) error {
 	return nil
 }
 
-/// If count is higher than the current min count, this bumps it up to the provided value and
-/// modifies the known data as needed.
-///
-/// Returns a [`WorldError::InvalidResults`] error if it would be impossible for `count`
-/// locations to be marked `Here` given what is already known about the word.
+// If count is higher than the current min-count, this bumps it up to the provided value and
+// modifies the known data as needed.
+//
+// Returns an error if it would be impossible for count locations to be marked [llsHere] given what
+// is already known about the word.
 func (self *presentLetter) possiblyBumpMinCount(count uint8) error {
 	if self.minCount >= count {
 		return nil
@@ -173,41 +170,6 @@ func (self *presentLetter) possiblyBumpMinCount(count uint8) error {
 		// If all possible unknowns must be here, set them.
 		self.setUnknownsTo(llsHere)
 		self.maybeRequiredCount = OptionalOf(count)
-	}
-	return nil
-}
-
-/// Merges the information known in the other object into this one.
-///
-/// Returns a [`WordleError::InvalidResults`] error if they contain incompatible information.
-func (self *presentLetter) merge(other *presentLetter) error {
-	// TODO: Consider changing this to return a copy.
-	if other.maybeRequiredCount.HasValue() {
-		err := self.setRequiredCount(other.maybeRequiredCount.Value())
-		if err != nil {
-			return err
-		}
-	} else if other.minCount > self.minCount {
-		err := self.possiblyBumpMinCount(other.minCount)
-		if err != nil {
-			return err
-		}
-	}
-
-	for i, state := range other.locatedState {
-		if self.locatedState[i] == state {
-			continue
-		}
-		var err error
-		switch state {
-		case llsHere:
-			err = self.setMustBeAt(uint8(i))
-		case llsNotHere:
-			err = self.setMustNotBeAt(uint8(i))
-		}
-		if err != nil {
-			return err
-		}
 	}
 	return nil
 }
@@ -236,21 +198,21 @@ func (self *presentLetter) setRequiredCountIfFull() {
 	}
 }
 
-/// Indicates the known restrictions that apply to a letter at a given location.
-///
-/// See [`WordRestrictions`].
+// LetterRestriction indicates the known restrictions that apply to a letter at a given location.
+//
+// See [WordRestrictions].
 type LetterRestriction uint8
 
 const (
-	/// The letter restriction is unknown.
+	// The letter restriction is unknown.
 	LetterRestrictionUnknown LetterRestriction = iota
-	/// The letter goes here.
+	// The letter goes here.
 	LetterRestrictionHere
-	/// The letter is in the word and might be here.
+	// The letter is in the word and might be here.
 	LetterRestrictionPresentMaybeHere
-	/// The letter is in the word but not here.
+	// The letter is in the word but not here.
 	LetterRestrictionPresentNotHere
-	/// The letter is not in the word.
+	// The letter is not in the word.
 	LetterRestrictionNotPresent
 )
 
@@ -270,17 +232,17 @@ func (lr LetterRestriction) String() string {
 	return "invalid value"
 }
 
-/// Defines letter restrictions that a word must adhere to, such as "the first letter of the word
-/// must be 'a'".
-///
-/// Restrictions are derived from [`GuessResult`]s.
+// WordRestrictions defines letter restrictions that a word must adhere to, such as "the first
+// letter of the word must be 'a'".
+//
+// Restrictions are derived from [GuessResult]s.
 type WordRestrictions struct {
 	wordLength        uint8
 	presentLetters    map[rune]*presentLetter
 	notPresentLetters []rune
 }
 
-/// Creates a `WordRestrictions` object for the given word length with all letters unknown.
+// Creates a [WordRestrictions] object for the given word length with all letters unknown.
 func InitWordRestrictions(wordLength uint8) WordRestrictions {
 	return WordRestrictions{
 		wordLength,
@@ -289,16 +251,16 @@ func InitWordRestrictions(wordLength uint8) WordRestrictions {
 	}
 }
 
-/// Returns the restrictions imposed by the given result.
+// WordRestrictionsFromResult returns the restrictions imposed by the given result.
 func WordRestrictionsFromResult(result *GuessResult) (WordRestrictions, error) {
 	restrictions := InitWordRestrictions(uint8(result.Guess.Len()))
 	err := restrictions.Update(result)
 	return restrictions, err
 }
 
-/// Adds restrictions arising from the given result.
-///
-/// Returns an error if the result is incompatible with the existing restrictions.
+// Update adds restrictions arising from the given result.
+//
+// Returns an error if the result is incompatible with the existing restrictions.
 func (self *WordRestrictions) Update(guessResult *GuessResult) error {
 	var err error
 	guessLen := guessResult.Guess.Len()
@@ -319,42 +281,7 @@ func (self *WordRestrictions) Update(guessResult *GuessResult) error {
 	return nil
 }
 
-/// Adds the given restrictions to this restriction.
-///
-/// Returns an error if the results are incompatible.
-func (self *WordRestrictions) Merge(other *WordRestrictions) error {
-	if self.wordLength != other.wordLength {
-		return errors.New(fmt.Sprintf("Can't merge restrictions with different word lengths (has: %v, received: %v).", self.wordLength, other.wordLength))
-	}
-	for _, notPresentLetter := range other.notPresentLetters {
-		if _, isPresent := self.presentLetters[notPresentLetter]; isPresent {
-			return errors.New("Can't merge incompatible restrictions.")
-		}
-		for _, otherNotPresent := range other.notPresentLetters {
-			if slices.Contains(self.notPresentLetters, otherNotPresent) {
-				continue
-			}
-			self.notPresentLetters = append(self.notPresentLetters, notPresentLetter)
-		}
-	}
-	for letter, otherPresence := range other.presentLetters {
-		if slices.Contains(self.notPresentLetters, letter) {
-			return errors.New("Can't merge incompatible restrictions.")
-		}
-		currentPresence, isPresent := self.presentLetters[letter]
-		if isPresent {
-			err := currentPresence.merge(otherPresence)
-			if err != nil {
-				return err
-			}
-		} else {
-			self.presentLetters[letter] = otherPresence
-		}
-	}
-	return nil
-}
-
-/// Returns `true` iff the given word satisfies these restrictions.
+// IsSatisfiedBy returns true iff the given word satisfies these restrictions.
 func (self *WordRestrictions) IsSatisfiedBy(word Word) bool {
 	wordLen := word.Len()
 	return wordLen == int(self.wordLength) &&
@@ -381,7 +308,8 @@ func (self *WordRestrictions) IsSatisfiedBy(word Word) bool {
 		})
 }
 
-/// Returns true iff the exact state of the given letter at the given location is already known.
+// IsStateKnown returns true iff the exact state of the given letter at the given location is
+// already known.
 func (self *WordRestrictions) IsStateKnown(letter rune, location uint8) bool {
 	if presence, isPresent := self.presentLetters[letter]; isPresent {
 		return presence.state(location) != llsUnknown
@@ -389,13 +317,13 @@ func (self *WordRestrictions) IsStateKnown(letter rune, location uint8) bool {
 	return slices.Contains(self.notPresentLetters, letter)
 }
 
-/// Returns the current known state of this letter, either:
-///
-///  * `LetterRestrictionUnknown` -> Nothing is known about the letter.
-///  * `LetterRestrictionNotPresent` -> The letter is not in the word.
-///  * `LetterRestrictionPresentNotHere` -> The letter is present but not here.
-///  * `LetterRestrictionPresentMaybeHere` -> The letter is present, but we don't know if it's here or not.
-///  * `LetterRestrictionHere` -> The letter goes here.
+// State returns the current known state of this letter at the given location, either:
+//
+//  * [LetterRestrictionUnknown] -> Nothing is known about the letter.
+//  * [LetterRestrictionNotPresent] -> The letter is not in the word.
+//  * [LetterRestrictionPresentNotHere] -> The letter is present but not here.
+//  * [LetterRestrictionPresentMaybeHere] -> The letter is present, but we don't know if it's here or not.
+//  * [LetterRestrictionHere] -> The letter goes here.
 func (self *WordRestrictions) State(letter rune, location uint8) LetterRestriction {
 	if presence, isPresent := self.presentLetters[letter]; isPresent {
 		switch presence.state(location) {

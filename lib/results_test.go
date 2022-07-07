@@ -1,10 +1,23 @@
 package go_wordle_solver
 
 import (
+	"fmt"
 	"testing"
 
 	"gotest.tools/v3/assert"
 )
+
+func ExampleGetResultForGuess() {
+	result, err := GetResultForGuess(WordFromString("mesas"), WordFromString("sassy"))
+	if err != nil {
+		fmt.Println(err)
+	}
+
+	fmt.Println(result)
+
+	// Output:
+	// {sassy [present not here present not here correct not present not present]}
+}
 
 func TestGetResultForGuessCorrect(t *testing.T) {
 	result, err := GetResultForGuess(WordFromString("abcb"), WordFromString("abcb"))
