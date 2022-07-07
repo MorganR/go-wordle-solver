@@ -18,7 +18,7 @@ type WordBank struct {
 
 const defaultWordBuffer int = 100
 
-// Constructs a new `WordBank` struct by reading words from the given reader.
+// WordBankFromReader constructs a new [WordBank] by reading words from the given reader.
 //
 // The reader should provide one word per line. Each word will be trimmed and converted to
 // lower case. Empty lines are skipped. At least one word must be provided.
@@ -53,7 +53,7 @@ func WordBankFromReader(r io.Reader) (WordBank, error) {
 	return WordBank{slices.Clip(words), uint8(wordLength)}, nil
 }
 
-// Constructs a new `WordBank` struct using the words from the given vector.
+// WordBankFromSlice constructs a new [WordBank] using the words from the given slice.
 //
 // Each word will be trimmed and converted to lower case. At least one word must be provided.
 //
@@ -74,11 +74,12 @@ func WordBankFromSlice(words []string) (WordBank, error) {
 	return WordBank{allWords, uint8(wordLength)}, nil
 }
 
+// WordLength provides the length of each word in the [WordBank].
 func (wb *WordBank) WordLength() uint8 {
-	return uint8(wb.wordLength)
+	return wb.wordLength
 }
 
-// Returns all possible words from this word bank.
+// Words provides access to the words in this bank via a new [PossibleWords] object.
 func (wb *WordBank) Words() PossibleWords {
 	return initPossibleWords(wb.allWords)
 }
