@@ -79,6 +79,18 @@ const (
 	GameFailure
 )
 
+// String prints GameStatus as a readable string.
+func (gs GameStatus) String() string {
+	switch gs {
+	case GameSuccess:
+		return "success"
+	case GameFailure:
+		return "failure"
+	default:
+		return "invalid status"
+	}
+}
+
 // The result of a Wordle game.
 type GameResult struct {
 	// Whether the game was won or lost.

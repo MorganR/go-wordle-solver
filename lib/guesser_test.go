@@ -1,10 +1,32 @@
 package go_wordle_solver
 
 import (
+	"fmt"
 	"testing"
 
 	"gotest.tools/v3/assert"
 )
+
+func ExamplePlayGameWithGuesser() {
+	bank, err := WordBankFromSlice([]string{"abc", "bcd", "cde"})
+	if err != nil {
+		fmt.Print(err)
+		return
+	}
+	guesser := InitRandomGuesser(&bank)
+
+	maxGuesses := 3
+	result, err := PlayGameWithGuesser(WordFromString("bcd"), maxGuesses, &guesser)
+	if err != nil {
+		fmt.Print(err)
+		return
+	}
+
+	fmt.Println(result.Status)
+
+	// Output:
+	// success
+}
 
 func TestRandomGuesserSelectNextGuess(t *testing.T) {
 	bank, _ := WordBankFromSlice([]string{"abc", "bcd", "def"})

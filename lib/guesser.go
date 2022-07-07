@@ -7,7 +7,7 @@ import (
 	"time"
 )
 
-// Guesses words in order to solve a single Wordle.
+// A Guesser guesses words in order to solve a single Wordle.
 type Guesser interface {
 	// Copies this guesser.
 	Copy() Guesser
@@ -15,42 +15,20 @@ type Guesser interface {
 	// Resets this guesser for solving a new puzzle.
 	Reset()
 
-	// Updates this guesser with information about a word.
+	// Updates this guesser with information about a guess.
 	Update(result *GuessResult) error
 
 	// Selects a new guess for the Wordle.
 	//
 	// Returns an empty optional if no known words are possible given the known restrictions imposed
-	// by previous calls to [`Self::update()`].
+	// by previous calls to [Guesser.Update].
 	SelectNextGuess() Optional[Word]
 
 	// Provides read access to the remaining set of possible words in this guesser.
 	PossibleWords() *PossibleWords
 }
 
-// Attempts to guess the given word within the maximum number of guesses, using the given word
-// guesser.
-//
-// ```
-// use rs_wordle_solver::GameResult;
-// use rs_wordle_solver::RandomGuesser;
-// use rs_wordle_solver::WordBank;
-// use rs_wordle_solver::play_game_with_guesser;
-//
-// let bank = WordBank::from_iterator(&["abc", "def", "ghi"]).unwrap();
-// let mut guesser = RandomGuesser::new(&bank);
-// let result = play_game_with_guesser("def", 4, guesser.clone());
-//
-// assert!(matches!(result, GameResult::Success(_guesses)));
-//
-// let result = play_game_with_guesser("zzz", 4, guesser.clone());
-//
-// assert!(matches!(result, GameResult::UnknownWord));
-//
-// let result = play_game_with_guesser("other", 4, guesser);
-//
-// assert!(matches!(result, GameResult::UnknownWord));
-// ```
+// Attempts to guess the given word within the maximum number of guesses, using the given [Guesser].
 func PlayGameWithGuesser[G Guesser](
 	objective Word,
 	maxNumGuesses int,
@@ -86,7 +64,7 @@ func PlayGameWithGuesser[G Guesser](
 	return GameResult{GameFailure, turns}, nil
 }
 
-// Guesses at random from the possible words that meet the restrictions.
+// Guesses at random from the possible words that meet the restrictions imposed by each guess.
 //
 // A sample benchmark against the `data/improved-words.txt` list performed as follows:
 //
@@ -112,15 +90,7 @@ type RandomGuesser struct {
 	rng           *rand.Rand
 }
 
-// Constructs a new `RandomGuesser` using the given word bank.
-//
-// ```
-// use rs_wordle_solver::RandomGuesser;
-// use rs_wordle_solver::WordBank;
-//
-// let bank = WordBank::from_iterator(&["abc", "def", "ghi"]).unwrap();
-// let guesser = RandomGuesser::new(&bank);
-// ```
+// Constructs a new [RandomGuesser] using the given word bank.
 func InitRandomGuesser(bank *WordBank) RandomGuesser {
 	return RandomGuesser{
 		bank:          bank,
@@ -129,22 +99,28 @@ func InitRandomGuesser(bank *WordBank) RandomGuesser {
 	}
 }
 
+// Copies the [RandomGuesser].
+//
+// The current state of possible words is maintained, but the random source may or may not change.
 func (self *RandomGuesser) Copy() Guesser {
 	return &RandomGuesser{
 		self.bank,
-		self.bank.Words(),
-		self.rng,
+		self.possibleWords.Copy(),
+		rand.New(rand.NewSource(time.Now().UnixMicro())),
 	}
 }
 
+// Resets the [RandomGuesser]'s possible words.
 func (self *RandomGuesser) Reset() {
 	self.possibleWords = self.bank.Words()
 }
 
+// Updates this guesser's possible words based on the result.
 func (self *RandomGuesser) Update(result *GuessResult) error {
 	return self.possibleWords.Filter(result)
 }
 
+// Selects a new guess at random from the remaining possible words.
 func (self *RandomGuesser) SelectNextGuess() Optional[Word] {
 	if self.possibleWords.Len() == 0 {
 		return Optional[Word]{}
@@ -153,11 +129,14 @@ func (self *RandomGuesser) SelectNextGuess() Optional[Word] {
 	return OptionalOf(self.possibleWords.At(random % self.possibleWords.Len()))
 }
 
+// Returns a pointer to the possible words for this guesser.
+//
+// This remains valid until [RandomGuesser.Reset] is called.
 func (self *RandomGuesser) PossibleWords() *PossibleWords {
 	return &self.possibleWords
 }
 
-// Determines how the best guess should be chosen.
+// GuessMode determines how the best guess should be chosen.
 type GuessMode int
 
 const (
@@ -167,6 +146,22 @@ const (
 	GuessModePossible
 )
 
+// String converts [GuessMode] to a readable string.
+func (gm GuessMode) String() string {
+	switch gm {
+	case GuessModeAll:
+		return "all"
+	case GuessModePossible:
+		return "possible"
+	default:
+		return "invalid GuessMode"
+	}
+}
+
+// MaxScoreGuesser guesses the wordle answer by selecting the word that maximizes a score, as
+// scored by the [WordScorer] implementation.
+//
+// This can support a large variety of algorithms.
 type MaxScoreGuesser[S WordScorer] struct {
 	bank           *WordBank
 	possibleWords  PossibleWords
@@ -175,6 +170,7 @@ type MaxScoreGuesser[S WordScorer] struct {
 	unguessedWords PossibleWords
 }
 
+// InitMaxScoreGuesser constructs a [MaxScoreGuesser] for the given bank, scorer and mode.
 func InitMaxScoreGuesser[S WordScorer](bank *WordBank, scorer S, mode GuessMode) MaxScoreGuesser[S] {
 	return MaxScoreGuesser[S]{
 		bank:           bank,
@@ -185,22 +181,25 @@ func InitMaxScoreGuesser[S WordScorer](bank *WordBank, scorer S, mode GuessMode)
 	}
 }
 
+// Copy copies the [MaxScoreGuesser].
 func (self *MaxScoreGuesser[S]) Copy() Guesser {
 	return &MaxScoreGuesser[S]{
 		self.bank,
-		self.bank.Words(),
+		self.possibleWords.Copy(),
 		self.scorer.Copy().(S),
 		self.guessMode,
-		self.bank.Words(),
+		self.unguessedWords.Copy(),
 	}
 }
 
+// Reset resets the [MaxScoreGuesser]'s possible words so it can be used to solve a new Wordle.
 func (self *MaxScoreGuesser[S]) Reset() {
 	self.possibleWords = self.bank.Words()
 	self.unguessedWords = self.bank.Words()
 	self.scorer.Reset(&self.possibleWords)
 }
 
+// Update updates the current possible words based on the given result.
 func (self *MaxScoreGuesser[S]) Update(result *GuessResult) error {
 	self.unguessedWords.Remove(result.Guess)
 	err := self.possibleWords.Filter(result)
@@ -210,6 +209,10 @@ func (self *MaxScoreGuesser[S]) Update(result *GuessResult) error {
 	return self.scorer.Update(result.Guess, &self.possibleWords)
 }
 
+// SelectNextGuess returns the guess that maximizes the owned [WordScorer]'s score.
+//
+// If there are no more possible words, this returns an empty optional. This should only happen if
+// the objective word is not in this guesser's [WordBank].
 func (self *MaxScoreGuesser[S]) SelectNextGuess() Optional[Word] {
 	if self.possibleWords.Len() == 0 {
 		return Optional[Word]{}
@@ -242,6 +245,9 @@ func (self *MaxScoreGuesser[S]) SelectNextGuess() Optional[Word] {
 	return OptionalOf(self.possibleWords.Maximizing(self.scorer.ScoreWord))
 }
 
+// PossibleWords provides a pointer to the possible words for this guesser.
+//
+// This remains valid until [MaxScoreGuesser.Reset] is called.
 func (self *MaxScoreGuesser[S]) PossibleWords() *PossibleWords {
 	return &self.possibleWords
 }
