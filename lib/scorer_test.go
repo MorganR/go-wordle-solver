@@ -1,6 +1,7 @@
 package go_wordle_solver
 
 import (
+	"os"
 	"testing"
 
 	"gotest.tools/v3/assert"
@@ -59,5 +60,23 @@ func TestMaxEliminationsScoreWordWithUpdateAndReset(t *testing.T) {
 	scorer.Reset(&preUpdatePossibleWords)
 	for i := 0; i < preUpdatePossibleWords.Len(); i++ {
 		assert.Equal(t, scorer.ScoreWord(preUpdatePossibleWords.At(i)), preUpdateScores[i])
+	}
+}
+
+func BenchmarkInitMaxEliminationsScorer(b *testing.B) {
+	f, err := os.Open("../data/1000-improved-words-shuffled.txt")
+	if err != nil {
+		b.Fatal(err)
+	}
+	bank, err := WordBankFromReader(f)
+	if err != nil {
+		b.Fatal(err)
+	}
+
+	for i := 0; i < b.N; i++ {
+		_, err := InitMaxEliminationsScorer(&bank)
+		if err != nil {
+			b.Fatal(err)
+		}
 	}
 }
