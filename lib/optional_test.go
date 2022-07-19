@@ -1,10 +1,23 @@
 package go_wordle_solver
 
 import (
+	"fmt"
 	"testing"
 
 	"gotest.tools/v3/assert"
 )
+
+func ExampleOptional() {
+	maybeValue := Optional[int]{}
+	fmt.Println(maybeValue.String())
+
+	maybeValue = OptionalOf(5)
+	fmt.Println(maybeValue.String())
+
+	// Output:
+	// { }
+	// { value: 5 }
+}
 
 func TestDefaultOptional(t *testing.T) {
 	opt := Optional[int]{}

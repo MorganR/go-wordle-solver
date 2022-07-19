@@ -161,19 +161,19 @@ func TestPresentLetterNotHereAfterHereErrors(t *testing.T) {
 func TestWordRestrictionsIsSatisfiedByNoRestrictions(t *testing.T) {
 	restrictions := InitWordRestrictions(4)
 
-	assert.Assert(t, restrictions.IsSatisfiedBy("abcd"))
-	assert.Assert(t, restrictions.IsSatisfiedBy("zzzz"))
+	assert.Assert(t, restrictions.IsSatisfiedBy(WordFromString("abcd")))
+	assert.Assert(t, restrictions.IsSatisfiedBy(WordFromString("zzzz")))
 
 	// Wrong length
-	assert.Equal(t, restrictions.IsSatisfiedBy(""), false)
-	assert.Equal(t, restrictions.IsSatisfiedBy("abcde"), false)
+	assert.Equal(t, restrictions.IsSatisfiedBy(WordFromString("")), false)
+	assert.Equal(t, restrictions.IsSatisfiedBy(WordFromString("abcde")), false)
 }
 
 func TestWordRestrictionsIsSatisfiedByWithRestrictions(t *testing.T) {
 	restrictions := InitWordRestrictions(4)
 
-	assert.NilError(t, restrictions.update(&GuessResult{
-		Guess: "abbc",
+	assert.NilError(t, restrictions.Update(&GuessResult{
+		Guess: WordFromString("abbc"),
 		Results: []LetterResult{
 			LetterResultPresentNotHere,
 			LetterResultPresentNotHere,
@@ -182,20 +182,46 @@ func TestWordRestrictionsIsSatisfiedByWithRestrictions(t *testing.T) {
 		},
 	}))
 
-	assert.Assert(t, restrictions.IsSatisfiedBy("bdba"))
-	assert.Assert(t, restrictions.IsSatisfiedBy("dabb"))
+	assert.Assert(t, restrictions.IsSatisfiedBy(WordFromString("bdba")))
+	assert.Assert(t, restrictions.IsSatisfiedBy(WordFromString("dabb")))
 
-	assert.Equal(t, restrictions.IsSatisfiedBy("bbba"), false)
-	assert.Equal(t, restrictions.IsSatisfiedBy("bcba"), false)
-	assert.Equal(t, restrictions.IsSatisfiedBy("adbd"), false)
-	assert.Equal(t, restrictions.IsSatisfiedBy("bdbd"), false)
+	assert.Equal(t, restrictions.IsSatisfiedBy(WordFromString("bbba")), false)
+	assert.Equal(t, restrictions.IsSatisfiedBy(WordFromString("bcba")), false)
+	assert.Equal(t, restrictions.IsSatisfiedBy(WordFromString("adbd")), false)
+	assert.Equal(t, restrictions.IsSatisfiedBy(WordFromString("bdbd")), false)
+}
+
+func TestWordRestrictionsWithDuplicateNotHereLetter(t *testing.T) {
+	restrictions := InitWordRestrictions(5)
+
+	assert.NilError(t, restrictions.Update(&GuessResult{
+		Guess: WordFromString("emcee"),
+		Results: []LetterResult{
+			LetterResultNotPresent,
+			LetterResultNotPresent,
+			LetterResultNotPresent,
+			LetterResultNotPresent,
+			LetterResultCorrect,
+		},
+	}))
+
+	assert.Equal(t, restrictions.State('e', 0), LetterRestrictionPresentNotHere)
+	assert.Equal(t, restrictions.State('e', 1), LetterRestrictionPresentNotHere)
+	assert.Equal(t, restrictions.State('e', 2), LetterRestrictionPresentNotHere)
+	assert.Equal(t, restrictions.State('e', 3), LetterRestrictionPresentNotHere)
+	assert.Equal(t, restrictions.State('e', 4), LetterRestrictionHere)
+	assert.Equal(t, restrictions.State('s', 0), LetterRestrictionUnknown)
+	assert.Equal(t, restrictions.State('t', 1), LetterRestrictionUnknown)
+	assert.Equal(t, restrictions.State('a', 2), LetterRestrictionUnknown)
+	assert.Equal(t, restrictions.State('v', 3), LetterRestrictionUnknown)
+	assert.Assert(t, restrictions.IsSatisfiedBy(WordFromString("stave")))
 }
 
 func TestWordRestrictionsState(t *testing.T) {
 	restrictions := InitWordRestrictions(4)
 
-	assert.NilError(t, restrictions.update(&GuessResult{
-		Guess: "abbc",
+	assert.NilError(t, restrictions.Update(&GuessResult{
+		Guess: WordFromString("abbc"),
 		Results: []LetterResult{
 			LetterResultPresentNotHere,
 			LetterResultPresentNotHere,
@@ -204,22 +230,22 @@ func TestWordRestrictionsState(t *testing.T) {
 		},
 	}))
 
-	assert.Equal(t, restrictions.State(LocatedLetter{Letter: 'a', Location: 0}), LetterRestrictionPresentNotHere)
-	assert.Equal(t, restrictions.State(LocatedLetter{Letter: 'a', Location: 1}), LetterRestrictionPresentMaybeHere)
-	assert.Equal(t, restrictions.State(LocatedLetter{Letter: 'a', Location: 2}), LetterRestrictionPresentNotHere)
-	assert.Equal(t, restrictions.State(LocatedLetter{Letter: 'b', Location: 0}), LetterRestrictionPresentMaybeHere)
-	assert.Equal(t, restrictions.State(LocatedLetter{Letter: 'b', Location: 1}), LetterRestrictionPresentNotHere)
-	assert.Equal(t, restrictions.State(LocatedLetter{Letter: 'b', Location: 2}), LetterRestrictionHere)
-	assert.Equal(t, restrictions.State(LocatedLetter{Letter: 'c', Location: 3}), LetterRestrictionNotPresent)
-	assert.Equal(t, restrictions.State(LocatedLetter{Letter: 'c', Location: 0}), LetterRestrictionNotPresent)
-	assert.Equal(t, restrictions.State(LocatedLetter{Letter: 'z', Location: 0}), LetterRestrictionUnknown)
+	assert.Equal(t, restrictions.State('a', 0), LetterRestrictionPresentNotHere)
+	assert.Equal(t, restrictions.State('a', 1), LetterRestrictionPresentMaybeHere)
+	assert.Equal(t, restrictions.State('a', 2), LetterRestrictionPresentNotHere)
+	assert.Equal(t, restrictions.State('b', 0), LetterRestrictionPresentMaybeHere)
+	assert.Equal(t, restrictions.State('b', 1), LetterRestrictionPresentNotHere)
+	assert.Equal(t, restrictions.State('b', 2), LetterRestrictionHere)
+	assert.Equal(t, restrictions.State('c', 3), LetterRestrictionNotPresent)
+	assert.Equal(t, restrictions.State('c', 0), LetterRestrictionNotPresent)
+	assert.Equal(t, restrictions.State('z', 0), LetterRestrictionUnknown)
 }
 
 func TestWordRestrictionsIsStateKnown(t *testing.T) {
 	restrictions := InitWordRestrictions(4)
 
-	assert.NilError(t, restrictions.update(&GuessResult{
-		Guess: "abbc",
+	assert.NilError(t, restrictions.Update(&GuessResult{
+		Guess: WordFromString("abbc"),
 		Results: []LetterResult{
 			LetterResultPresentNotHere,
 			LetterResultPresentNotHere,
@@ -228,19 +254,19 @@ func TestWordRestrictionsIsStateKnown(t *testing.T) {
 		},
 	}))
 
-	assert.Assert(t, restrictions.IsStateKnown(LocatedLetter{Letter: 'a', Location: 0}))
-	assert.Equal(t, restrictions.IsStateKnown(LocatedLetter{Letter: 'a', Location: 1}), false)
-	assert.Assert(t, restrictions.IsStateKnown(LocatedLetter{Letter: 'b', Location: 2}))
-	assert.Assert(t, restrictions.IsStateKnown(LocatedLetter{Letter: 'c', Location: 3}))
-	assert.Assert(t, restrictions.IsStateKnown(LocatedLetter{Letter: 'c', Location: 0}))
-	assert.Equal(t, restrictions.IsStateKnown(LocatedLetter{Letter: 'z', Location: 0}), false)
+	assert.Assert(t, restrictions.IsStateKnown('a', 0))
+	assert.Equal(t, restrictions.IsStateKnown('a', 1), false)
+	assert.Assert(t, restrictions.IsStateKnown('b', 2))
+	assert.Assert(t, restrictions.IsStateKnown('c', 3))
+	assert.Assert(t, restrictions.IsStateKnown('c', 0))
+	assert.Equal(t, restrictions.IsStateKnown('z', 0), false)
 }
 
 func TestWordRestrictionsIsSatisfiedByWithKnownRequiredCount(t *testing.T) {
 	restrictions := InitWordRestrictions(4)
 
-	assert.NilError(t, restrictions.update(&GuessResult{
-		Guess: "abbc",
+	assert.NilError(t, restrictions.Update(&GuessResult{
+		Guess: WordFromString("abbc"),
 		Results: []LetterResult{
 			LetterResultPresentNotHere,
 			LetterResultNotPresent,
@@ -249,20 +275,20 @@ func TestWordRestrictionsIsSatisfiedByWithKnownRequiredCount(t *testing.T) {
 		},
 	}))
 
-	assert.Assert(t, restrictions.IsSatisfiedBy("edba"))
-	assert.Assert(t, restrictions.IsSatisfiedBy("dabe"))
-	assert.Assert(t, restrictions.IsSatisfiedBy("daba"))
+	assert.Assert(t, restrictions.IsSatisfiedBy(WordFromString("edba")))
+	assert.Assert(t, restrictions.IsSatisfiedBy(WordFromString("dabe")))
+	assert.Assert(t, restrictions.IsSatisfiedBy(WordFromString("daba")))
 
-	assert.Equal(t, restrictions.IsSatisfiedBy("bdba"), false)
-	assert.Equal(t, restrictions.IsSatisfiedBy("dcba"), false)
-	assert.Equal(t, restrictions.IsSatisfiedBy("adbd"), false)
+	assert.Equal(t, restrictions.IsSatisfiedBy(WordFromString("bdba")), false)
+	assert.Equal(t, restrictions.IsSatisfiedBy(WordFromString("dcba")), false)
+	assert.Equal(t, restrictions.IsSatisfiedBy(WordFromString("adbd")), false)
 }
 
 func TestWordRestrictionsIsSatisfiedByWithMinCount(t *testing.T) {
 	restrictions := InitWordRestrictions(4)
 
-	assert.NilError(t, restrictions.update(&GuessResult{
-		Guess: "abbc",
+	assert.NilError(t, restrictions.Update(&GuessResult{
+		Guess: WordFromString("abbc"),
 		Results: []LetterResult{
 			LetterResultPresentNotHere,
 			LetterResultPresentNotHere,
@@ -271,142 +297,9 @@ func TestWordRestrictionsIsSatisfiedByWithMinCount(t *testing.T) {
 		},
 	}))
 
-	assert.Assert(t, restrictions.IsSatisfiedBy("beba"))
-	assert.Assert(t, restrictions.IsSatisfiedBy("dabb"))
+	assert.Assert(t, restrictions.IsSatisfiedBy(WordFromString("beba")))
+	assert.Assert(t, restrictions.IsSatisfiedBy(WordFromString("dabb")))
 
-	assert.Equal(t, restrictions.IsSatisfiedBy("edba"), false)
-	assert.Equal(t, restrictions.IsSatisfiedBy("ebbd"), false)
-}
-
-func TestWordRestrictionsEmptyThenMerge(t *testing.T) {
-	restrictions := InitWordRestrictions(4)
-	otherRestrictions := InitWordRestrictions(4)
-	assert.NilError(t, otherRestrictions.update(&GuessResult{
-		Guess: "abbc",
-		Results: []LetterResult{
-			LetterResultPresentNotHere,
-			LetterResultPresentNotHere,
-			LetterResultCorrect,
-			LetterResultNotPresent,
-		},
-	}))
-
-	assert.NilError(t, restrictions.merge(&otherRestrictions))
-
-	assert.Assert(t, restrictions.IsSatisfiedBy("babd"))
-	assert.Assert(t, restrictions.IsSatisfiedBy("baba"))
-	assert.Equal(t, restrictions.IsSatisfiedBy("babc"), false)
-	assert.Equal(t, restrictions.IsSatisfiedBy("badb"), false)
-	assert.Equal(t, restrictions.IsSatisfiedBy("adbb"), false)
-	assert.Equal(t, restrictions.IsSatisfiedBy("dbba"), false)
-}
-
-func TestWordRestrictionsMerge(t *testing.T) {
-	restrictions := InitWordRestrictions(4)
-	otherRestrictions := InitWordRestrictions(4)
-	assert.NilError(t, restrictions.update(&GuessResult{
-		Guess: "bade",
-		Results: []LetterResult{
-			LetterResultCorrect,
-			LetterResultCorrect,
-			LetterResultNotPresent,
-			LetterResultCorrect,
-		},
-	}))
-	assert.NilError(t, otherRestrictions.update(&GuessResult{
-		Guess: "abbc",
-		Results: []LetterResult{
-			LetterResultPresentNotHere,
-			LetterResultPresentNotHere,
-			LetterResultCorrect,
-			LetterResultNotPresent,
-		},
-	}))
-
-	assert.NilError(t, restrictions.merge(&otherRestrictions))
-
-	assert.Assert(t, restrictions.IsSatisfiedBy("babe"))
-	assert.Equal(t, restrictions.IsSatisfiedBy("baee"), false)
-}
-
-func TestWordRestrictionsMergeWrongLength(t *testing.T) {
-	restrictions := InitWordRestrictions(4)
-	otherRestrictions := InitWordRestrictions(5)
-
-	assert.Error(t, restrictions.merge(&otherRestrictions), "Can't merge restrictions with different word lengths (has: 4, received: 5).")
-}
-
-func TestWordRestrictionsConflictingMergePresentThenNotPresent(t *testing.T) {
-	restrictions := InitWordRestrictions(4)
-	otherRestrictions := InitWordRestrictions(4)
-	assert.NilError(t, restrictions.update(&GuessResult{
-		Guess: "abcd",
-		Results: []LetterResult{
-			LetterResultPresentNotHere,
-			LetterResultPresentNotHere,
-			LetterResultPresentNotHere,
-			LetterResultNotPresent,
-		},
-	}))
-	assert.NilError(t, otherRestrictions.update(&GuessResult{
-		Guess: "abbc",
-		Results: []LetterResult{
-			LetterResultPresentNotHere,
-			LetterResultPresentNotHere,
-			LetterResultCorrect,
-			LetterResultNotPresent,
-		},
-	}))
-
-	assert.Error(t, restrictions.merge(&otherRestrictions), "Can't merge incompatible restrictions.")
-}
-
-func TestWordRestrictionsConflictingMergeNotPresentThenPresent(t *testing.T) {
-	restrictions := InitWordRestrictions(4)
-	otherRestrictions := InitWordRestrictions(4)
-	assert.NilError(t, restrictions.update(&GuessResult{
-		Guess: "abcd",
-		Results: []LetterResult{
-			LetterResultNotPresent,
-			LetterResultPresentNotHere,
-			LetterResultNotPresent,
-			LetterResultNotPresent,
-		},
-	}))
-	assert.NilError(t, otherRestrictions.update(&GuessResult{
-		Guess: "abbc",
-		Results: []LetterResult{
-			LetterResultPresentNotHere,
-			LetterResultPresentNotHere,
-			LetterResultCorrect,
-			LetterResultNotPresent,
-		},
-	}))
-
-	assert.Error(t, restrictions.merge(&otherRestrictions), "Can't merge incompatible restrictions.")
-}
-
-func TestWordRestrictionsConflictingMergePresentDifferentPlace(t *testing.T) {
-	restrictions := InitWordRestrictions(4)
-	otherRestrictions := InitWordRestrictions(4)
-	assert.NilError(t, restrictions.update(&GuessResult{
-		Guess: "abbc",
-		Results: []LetterResult{
-			LetterResultPresentNotHere,
-			LetterResultCorrect,
-			LetterResultCorrect,
-			LetterResultNotPresent,
-		},
-	}))
-	assert.NilError(t, otherRestrictions.update(&GuessResult{
-		Guess: "abbc",
-		Results: []LetterResult{
-			LetterResultPresentNotHere,
-			LetterResultPresentNotHere,
-			LetterResultCorrect,
-			LetterResultNotPresent,
-		},
-	}))
-
-	assert.Error(t, restrictions.merge(&otherRestrictions), "Can't set letter to not here at index 1 since it's already marked as here.")
+	assert.Equal(t, restrictions.IsSatisfiedBy(WordFromString("edba")), false)
+	assert.Equal(t, restrictions.IsSatisfiedBy(WordFromString("ebbd")), false)
 }

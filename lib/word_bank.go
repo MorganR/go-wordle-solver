@@ -1,33 +1,85 @@
 package go_wordle_solver
 
 import (
+	"bufio"
 	"errors"
+	"fmt"
+	"io"
+	"strings"
+
+	"golang.org/x/exp/slices"
 )
 
 // WordBank provides a read-only set of equal length words.
 type WordBank struct {
-	allWords   []string
-	wordLength uint
+	allWords   []Word
+	wordLength uint8
 }
 
-// Creates a WordBank from the given word list.
+const defaultWordBuffer int = 100
+
+// WordBankFromReader constructs a new [WordBank] by reading words from the given reader.
 //
-// The list must be non-empty, and the words must all have the same length. Duplicate words are
-// removed.
-func InitWordBank(words []string) (WordBank, error) {
+// The reader should provide one word per line. Each word will be trimmed and converted to
+// lower case. Empty lines are skipped. At least one word must be provided.
+//
+// After trimming, all words must be the same length, else this returns an error.
+func WordBankFromReader(r io.Reader) (WordBank, error) {
+	s := bufio.NewScanner(r)
+	words := make([]Word, 0, defaultWordBuffer)
+	n := 0
+	wordLength := 0
+	for ok := s.Scan(); ok; ok = s.Scan() {
+		thisWord := WordFromString(strings.ToLower(strings.TrimSpace(s.Text())))
+		thisWordLength := thisWord.Len()
+		if thisWordLength == 0 {
+			continue
+		}
+		words = append(words, thisWord)
+		if n == 0 {
+			wordLength = thisWordLength
+		}
+		if thisWordLength != wordLength {
+			return WordBank{}, fmt.Errorf("Words must all be the same length. Encountered word with length %v when expecting length %v.", thisWordLength, wordLength)
+		}
+		n++
+	}
+	if err := s.Err(); err != nil {
+		return WordBank{}, err
+	}
+	if len(words) == 0 {
+		return WordBank{}, errors.New("At least one word must be provided.")
+	}
+	return WordBank{slices.Clip(words), uint8(wordLength)}, nil
+}
+
+// WordBankFromSlice constructs a new [WordBank] using the words from the given slice.
+//
+// Each word will be trimmed and converted to lower case. At least one word must be provided.
+//
+// After trimming, all words must be the same length, else this returns an error.
+func WordBankFromSlice(words []string) (WordBank, error) {
 	if len(words) == 0 {
 		return WordBank{}, errors.New("At least one word must be provided.")
 	}
 	wordLength := len(words[0])
-	for _, word := range words {
-		if len(word) != wordLength {
-			return WordBank{}, errors.New("Words must all be the same length.")
+	allWords := make([]Word, len(words))
+	for i, wordStr := range words {
+		word := WordFromString(strings.ToLower(strings.TrimSpace(wordStr)))
+		if word.Len() != wordLength {
+			return WordBank{}, fmt.Errorf("Words must all be the same length. Encountered word with length %v when expecting length %v.", word.Len(), wordLength)
 		}
+		allWords[i] = word
 	}
-	return WordBank{words, uint(wordLength)}, nil
+	return WordBank{allWords, uint8(wordLength)}, nil
 }
 
-// Returns all possible words from this word bank.
+// WordLength provides the length of each word in the [WordBank].
+func (wb *WordBank) WordLength() uint8 {
+	return wb.wordLength
+}
+
+// Words provides access to the words in this bank via a new [PossibleWords] object.
 func (wb *WordBank) Words() PossibleWords {
-	return PossibleWords{wb.allWords}
+	return initPossibleWords(wb.allWords)
 }
