@@ -19,8 +19,8 @@ var BenchListPath string
 var maxThreads = runtime.NumCPU()
 
 func init() {
+	benchCmd.Flags().StringVarP(&BenchListPath, "bench_list", "b", "../data/1000-improved-words-shuffled.txt", "Path to a list of objective words to benchmark this algorithm against.")
 	rootCmd.AddCommand(benchCmd)
-	benchCmd.LocalFlags().StringVarP(&BenchListPath, "bench_list", "b", "../data/1000-improved-words-shuffled.txt", "Path to a list of objective words to benchmark this algorithm against.")
 }
 
 var benchCmd = &cobra.Command{
